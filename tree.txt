@@ -1,0 +1,17 @@
+
+.
+├── data/
+│   ├── dump_data/
+│   ├── CoLA/
+│   └── SST-2/
+├── LICENSE
+├── model_vanilla_vgcn_bert.py
+├── model_vgcn_bert.py
+├── output/
+├── prepare_data.py
+├── pytorch_pretrained_bert/
+├── README.md
+├── train_vanilla_vgcn_bert.py
+├── train_vgcn_bert.py
+└── utils.py
+
