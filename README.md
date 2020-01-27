@@ -5,7 +5,7 @@
 ## Overview
 This is the implementation of our ECIR 2020 paper: "VGCN-BERT: Augmenting BERT with  Graph Embedding for Text Classification".
 
-If you make use of this code or the GraphSage algorithm in your work, please cite the following paper:
+If you make use of this code or the VGCN-BERT approach in your work, please cite the following paper:
 
      @inproceedings{ZhibinluGraphEmbedding,
 	     author = {Zhibin Lu and Pan Du and Jian-Yun Nie},
@@ -23,31 +23,30 @@ If you make use of this code or the GraphSage algorithm in your work, please cit
 - [CoLA](https://github.com/nyu-mll/GLUE-baselines)
 
 ## Directory Structure
-%data/, data/dump\_data/, output/, utils.py, prepare_data.py, model_vanilla_vgcn_bert.py, model_vgcn_bert.py, train_vgcn_bert.py, train_vanilla_vgcn_bert.py.
-The \textit{data/} directory contains the original datasets and the corresponding pre-processed data. The \textit{output/} directory saves the model files while training the models. The \textit{pytorch\_pretrained\_bert/} directory is the module of Huggingface transformer. The other files with the \textit{.py} suffix are models, utility functions, training programs, and prediction programs.
+The *data/* directory contains the original datasets and the corresponding pre-processed data. The *output/* directory saves the model files while training the models. The *pytorch_pretrained_bert/* directory is the module of Huggingface transformer. The other files with the *.py* suffix are models, utility functions, training programs, and prediction programs.
 
 ## Running the code
 
 ### Pre-processing datasets
-Run \textit{prepare\_data.py} to pre-process the dataset and generate the vocabulary graph. 
+Run *prepare_data.py* to pre-process the dataset and generate the vocabulary graph. 
 
-\textbf{Examples:}
+**Examples:**
 ```
 python prepare_data.py --ds cola
 ```
 
 ### Train models
 
-Run \textit{train_vgcn_bert.py} to train the VGCN-BERT model. Before training the model, you must ensure that you have pre-processed the dataset.
+Run *train_vanilla_vgcn_bert.py* to train the Vanilla-VGCN-BERT model. Before training the model, you must ensure that you have pre-processed the dataset.
 
-\textbf{Examples:}
-```
-python train_vgcn_bert.py --ds cola
-```
-
-Run \textit{train_vanilla_vgcn_bert.py} to train the Vanilla-VGCN-BERT model. Before training the model, you must ensure that you have pre-processed the dataset.
-
-\textbf{Examples:}
+**Examples:**
 ```
 python train_vanilla_vgcn_bert.py --ds cola
+```
+
+Run *train_vgcn_bert.py* to train the VGCN-BERT model. Before training the model, you must ensure that you have pre-processed the dataset.
+
+**Examples:**
+```
+python train_vgcn_bert.py --ds cola
 ```
