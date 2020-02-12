@@ -10,7 +10,7 @@ If you make use of this code or the VGCN-BERT approach in your work, please cite
      @inproceedings{ZhibinluGraphEmbedding,
 	     author = {Zhibin Lu and Pan Du and Jian-Yun Nie},
 	     title = {VGCN-BERT: Augmenting BERT with Graph Embedding for Text Classification},
-	     booktitle = {ECIR},
+	     booktitle = {European Conference on Information Retrieval (ECIR)},
 	     year = {2020}
 	   }
 
