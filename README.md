@@ -7,6 +7,7 @@ This is the implementation of our ECIR 2020 paper: "VGCN-BERT: Augmenting BERT w
 
 If you make use of this code or the VGCN-BERT approach in your work, please cite the following paper:
 
+<<<<<<< HEAD
 @inproceedings{DBLP:conf/ecir/LuDN20,
   author    = {Zhibin Lu and
                Pan Du and
@@ -33,6 +34,14 @@ If you make use of this code or the VGCN-BERT approach in your work, please cite
   biburl    = {https://dblp.org/rec/conf/ecir/LuDN20.bib},
   bibsource = {dblp computer science bibliography, https://dblp.org}
 }
+=======
+     @inproceedings{ZhibinluGraphEmbedding,
+	     author = {Zhibin Lu and Pan Du and Jian-Yun Nie},
+	     title = {VGCN-BERT: Augmenting BERT with Graph Embedding for Text Classification},
+	     booktitle = {European Conference on Information Retrieval (ECIR)},
+	     year = {2020}
+	   }
+>>>>>>> 557080eccf4e16b252911017db2e28aca93aeb02
 
 ## Requirements
 - Python 3.7
