@@ -4,7 +4,7 @@
 # prepare_data.py
 # @author Zhibin.LU
 # @created 2019-05-22T09:28:29.705Z-04:00
-# @last-modified 2020-01-26T18:05:44.687Z-05:00
+# @last-modified 2020-04-15T14:51:35.359Z-04:00
 # @website: https://louis-udm.github.io
 # @description: pre-process data and prepare the vocabulary graph
 # # # #
@@ -17,7 +17,7 @@ import pickle as pkl
 import re
 import time
 import argparse
-import gc
+import os
 import sys
 from sklearn.utils import shuffle
 
@@ -52,6 +52,9 @@ if cfg_ds not in dataset_list:
 
 will_dump_objects=True
 dump_dir='data/dump_data'
+if not os.path.exists(dump_dir):
+    os.mkdir(dump_dir)
+
 if cfg_del_stop_words:
     freq_min_for_word_choice=5 
     # freq_min_for_word_choice=10 #best

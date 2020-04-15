@@ -4,7 +4,7 @@
 # train_vanilla_vgcn_bert.py
 # @author Zhibin.LU
 # @created 2019-09-26T19:10:59.569Z-05:00
-# @last-modified 2020-01-26T23:25:17.058Z-05:00
+# @last-modified 2020-04-15T14:52:18.448Z-04:00
 # @website: https://louis-udm.github.io
 # @description: Train the vanilla vgcn_bert model
 # # # #
@@ -87,6 +87,8 @@ warmup_proportion = 0.1
 
 data_dir='data/dump_data'
 output_dir = 'output/'
+if not os.path.exists(output_dir):
+    os.mkdir(output_dir)
 
 perform_metrics_str=['weighted avg','f1-score']
 
