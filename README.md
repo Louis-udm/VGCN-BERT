@@ -7,32 +7,18 @@ This is the implementation of our ECIR 2020 paper: "VGCN-BERT: Augmenting BERT w
 
 If you make use of this code or the VGCN-BERT approach in your work, please cite the following paper:
 
-@inproceedings{DBLP:conf/ecir/LuDN20,
-  author    = {Zhibin Lu and
-               Pan Du and
-               Jian{-}Yun Nie},
-  editor    = {Joemon M. Jose and
-               Emine Yilmaz and
-               Jo{\~{a}}o Magalh{\~{a}}es and
-               Pablo Castells and
-               Nicola Ferro and
-               M{\'{a}}rio J. Silva and
-               Fl{\'{a}}vio Martins},
-  title     = {{VGCN-BERT:} Augmenting {BERT} with Graph Embedding for Text Classification},
-  booktitle = {Advances in Information Retrieval - 42nd European Conference on {IR}
+     @inproceedings{ZhibinluGraphEmbedding,
+	     author    = {Zhibin Lu and Pan Du and Jian-Yun Nie},
+	     title     = {VGCN-BERT: Augmenting BERT with Graph Embedding for Text Classification},
+		 booktitle = {Advances in Information Retrieval - 42nd European Conference on {IR}
                Research, {ECIR} 2020, Lisbon, Portugal, April 14-17, 2020, Proceedings,
                Part {I}},
-  series    = {Lecture Notes in Computer Science},
-  volume    = {12035},
-  pages     = {369--382},
-  publisher = {Springer},
-  year      = {2020},
-  url       = {https://doi.org/10.1007/978-3-030-45439-5\_25},
-  doi       = {10.1007/978-3-030-45439-5\_25},
-  timestamp = {Tue, 14 Apr 2020 15:30:33 +0200},
-  biburl    = {https://dblp.org/rec/conf/ecir/LuDN20.bib},
-  bibsource = {dblp computer science bibliography, https://dblp.org}
-}
+  		 series    = {Lecture Notes in Computer Science},
+  		 volume    = {12035},
+  		 pages     = {369--382},
+  		 publisher = {Springer},
+  		 year      = {2020},
+	   }
 
 ## Requirements
 - Python 3.7
