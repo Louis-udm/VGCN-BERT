@@ -4,7 +4,7 @@
 # train_vgcn_bert.py
 # @author Zhibin.LU
 # @created 2019-09-01T19:41:49.613Z-04:00
-# @last-modified 2020-04-15T14:50:32.136Z-04:00
+# @last-modified 2020-05-08T01:25:03.040Z-04:00
 # @website: https://louis-udm.github.io
 # @description : Train vgcn_bert model
 # # # #
@@ -78,7 +78,7 @@ if cfg_ds=='sst':
 elif cfg_ds=='cola':
     batch_size = 16 #12
     learning_rate0 = 8e-6 #2e-5  
-    l2_decay = 0.01 
+    l2_decay = 0.001 
 
 MAX_SEQ_LENGTH = 200+gcn_embedding_dim 
 gradient_accumulation_steps = 1

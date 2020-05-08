@@ -4,7 +4,7 @@
 # model_vgcn_bert.py
 # @author Zhibin.LU
 # @created 2019-09-10T14:27:18.572Z-04:00
-# @last-modified 2020-01-26T23:02:57.214Z-05:00
+# @last-modified 2020-05-08T01:25:48.711Z-04:00
 # @website: https://louis-udm.github.io
 # @description: Models
 # # # #
@@ -117,7 +117,6 @@ class Pretrain_VGCN(nn.Module):
         vocab_input=gcn_swop_eye.matmul(words_embeddings).transpose(1,2)
         gcn_vocab_out = self.vocab_gcn(vocab_adj_list, vocab_input).transpose(1,2)
         gcn_vocab_out=self.dropout(self.act_func(gcn_vocab_out))
-        # import pudb;pu.db
         out=self.classifier(gcn_vocab_out.flatten(start_dim=1))
         return out
 
