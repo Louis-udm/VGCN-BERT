@@ -338,7 +338,7 @@ for epoch in range(start_epoch, total_train_epochs):
             if loss_weight is None:
                 loss = F.cross_entropy(logits, label_ids)
             else:
-                loss = F.cross_entropy(logits.view(-1, num_classes), label_ids, loss_weight)
+                loss = F.cross_entropy(logits.view(-1, num_classes), label_ids, loss_weight.float())
 
         if gradient_accumulation_steps > 1:
             loss = loss / gradient_accumulation_steps
