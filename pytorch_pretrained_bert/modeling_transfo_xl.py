@@ -18,7 +18,12 @@
     In particular https://github.com/kimiyoung/transformer-xl/blob/master/pytorch/mem_transformer.py
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import (
+    absolute_import,
+    division,
+    print_function,
+    unicode_literals,
+)
 
 import collections
 import copy
@@ -37,7 +42,10 @@ from torch.nn.parameter import Parameter
 
 from .file_utils import CONFIG_NAME, WEIGHTS_NAME, cached_path
 from .modeling import BertLayerNorm as LayerNorm
-from .modeling_transfo_xl_utilities import ProjectedAdaptiveLogSoftmax, sample_logits
+from .modeling_transfo_xl_utilities import (
+    ProjectedAdaptiveLogSoftmax,
+    sample_logits,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +99,10 @@ def build_tf_to_pytorch_map(model, config):
     ):
         layer_str = "transformer/adaptive_embed/cutoff_%d/" % i
         tf_to_pt_map.update(
-            {layer_str + "lookup_table": embed_l.weight, layer_str + "proj_W": proj_l}
+            {
+                layer_str + "lookup_table": embed_l.weight,
+                layer_str + "proj_W": proj_l,
+            }
         )
 
     # Transformer blocks
@@ -99,8 +110,10 @@ def build_tf_to_pytorch_map(model, config):
         layer_str = "transformer/layer_%d/" % i
         tf_to_pt_map.update(
             {
-                layer_str + "rel_attn/LayerNorm/gamma": b.dec_attn.layer_norm.weight,
-                layer_str + "rel_attn/LayerNorm/beta": b.dec_attn.layer_norm.bias,
+                layer_str
+                + "rel_attn/LayerNorm/gamma": b.dec_attn.layer_norm.weight,
+                layer_str
+                + "rel_attn/LayerNorm/beta": b.dec_attn.layer_norm.bias,
                 layer_str + "rel_attn/o/kernel": b.dec_attn.o_net.weight,
                 layer_str + "rel_attn/qkv/kernel": b.dec_attn.qkv_net.weight,
                 layer_str + "rel_attn/r/kernel": b.dec_attn.r_net.weight,
@@ -168,7 +181,9 @@ def load_tf_weights_in_transfo_xl(model, config, tf_path):
                 except AssertionError as e:
                     e.args += (p_i.shape, arr_i.shape)
                     raise
-                print("Initialize PyTorch weight {} for layer {}".format(name, i))
+                print(
+                    "Initialize PyTorch weight {} for layer {}".format(name, i)
+                )
                 p_i.data = torch.from_numpy(arr_i)
         else:
             try:
@@ -183,7 +198,9 @@ def load_tf_weights_in_transfo_xl(model, config, tf_path):
         tf_weights.pop(name + "/Adam_1", None)
 
     print(
-        "Weights not copied to PyTorch model: {}".format(", ".join(tf_weights.keys()))
+        "Weights not copied to PyTorch model: {}".format(
+            ", ".join(tf_weights.keys())
+        )
     )
     return model
 
@@ -259,7 +276,9 @@ class TransfoXLConfig(object):
             sys.version_info[0] == 2
             and isinstance(vocab_size_or_config_json_file, unicode)
         ):
-            with open(vocab_size_or_config_json_file, "r", encoding="utf-8") as reader:
+            with open(
+                vocab_size_or_config_json_file, "r", encoding="utf-8"
+            ) as reader:
                 json_config = json.loads(reader.read())
             for key, value in json_config.items():
                 self.__dict__[key] = value
@@ -423,8 +442,12 @@ class MultiHeadAttn(nn.Module):
         self.pre_lnorm = pre_lnorm
 
         if r_r_bias is None or r_w_bias is None:  # Biases are not shared
-            self.r_r_bias = nn.Parameter(torch.Tensor(self.n_head, self.d_head))
-            self.r_w_bias = nn.Parameter(torch.Tensor(self.n_head, self.d_head))
+            self.r_r_bias = nn.Parameter(
+                torch.Tensor(self.n_head, self.d_head)
+            )
+            self.r_w_bias = nn.Parameter(
+                torch.Tensor(self.n_head, self.d_head)
+            )
         else:
             self.r_r_bias = r_r_bias
             self.r_w_bias = r_w_bias
@@ -454,9 +477,13 @@ class MultiHeadAttn(nn.Module):
         attn_score.mul_(self.scale)
         if attn_mask is not None and attn_mask.any().item():
             if attn_mask.dim() == 2:
-                attn_score.masked_fill_(attn_mask[None, :, :, None], -float("inf"))
+                attn_score.masked_fill_(
+                    attn_mask[None, :, :, None], -float("inf")
+                )
             elif attn_mask.dim() == 3:
-                attn_score.masked_fill_(attn_mask[:, :, :, None], -float("inf"))
+                attn_score.masked_fill_(
+                    attn_mask[:, :, :, None], -float("inf")
+                )
 
         # [qlen x klen x bsz x n_head]
         attn_prob = F.softmax(attn_score, dim=1)
@@ -517,8 +544,12 @@ class RelMultiHeadAttn(nn.Module):
         self.pre_lnorm = pre_lnorm
 
         if r_r_bias is None or r_w_bias is None:  # Biases are not shared
-            self.r_r_bias = nn.Parameter(torch.Tensor(self.n_head, self.d_head))
-            self.r_w_bias = nn.Parameter(torch.Tensor(self.n_head, self.d_head))
+            self.r_r_bias = nn.Parameter(
+                torch.Tensor(self.n_head, self.d_head)
+            )
+            self.r_w_bias = nn.Parameter(
+                torch.Tensor(self.n_head, self.d_head)
+            )
         else:
             self.r_r_bias = r_r_bias
             self.r_w_bias = r_w_bias
@@ -580,7 +611,9 @@ class RelPartialLearnableMultiHeadAttn(RelMultiHeadAttn):
     def __init__(self, *args, **kwargs):
         super(RelPartialLearnableMultiHeadAttn, self).__init__(*args, **kwargs)
 
-        self.r_net = nn.Linear(self.d_model, self.n_head * self.d_head, bias=False)
+        self.r_net = nn.Linear(
+            self.d_model, self.n_head * self.d_head, bias=False
+        )
 
     def forward(self, w, r, attn_mask=None, mems=None):
         qlen, rlen, bsz = w.size(0), r.size(0), w.size(1)
@@ -738,9 +771,13 @@ class RelLearnableMultiHeadAttn(RelMultiHeadAttn):
         #### compute attention probability
         if attn_mask is not None and attn_mask.any().item():
             if attn_mask.dim() == 2:
-                attn_score.masked_fill_(attn_mask[None, :, :, None], -float("inf"))
+                attn_score.masked_fill_(
+                    attn_mask[None, :, :, None], -float("inf")
+                )
             elif attn_mask.dim() == 3:
-                attn_score.masked_fill_(attn_mask[:, :, :, None], -float("inf"))
+                attn_score.masked_fill_(
+                    attn_mask[:, :, :, None], -float("inf")
+                )
 
         # [qlen x klen x bsz x n_head]
         attn_prob = F.softmax(attn_score, dim=1)
@@ -772,7 +809,9 @@ class DecoderLayer(nn.Module):
     def __init__(self, n_head, d_model, d_head, d_inner, dropout, **kwargs):
         super(DecoderLayer, self).__init__()
 
-        self.dec_attn = MultiHeadAttn(n_head, d_model, d_head, dropout, **kwargs)
+        self.dec_attn = MultiHeadAttn(
+            n_head, d_model, d_head, dropout, **kwargs
+        )
         self.pos_ff = PositionwiseFF(
             d_model, d_inner, dropout, pre_lnorm=kwargs.get("pre_lnorm")
         )
@@ -796,10 +835,17 @@ class RelLearnableDecoderLayer(nn.Module):
             d_model, d_inner, dropout, pre_lnorm=kwargs.get("pre_lnorm")
         )
 
-    def forward(self, dec_inp, r_emb, r_w_bias, r_bias, dec_attn_mask=None, mems=None):
+    def forward(
+        self, dec_inp, r_emb, r_w_bias, r_bias, dec_attn_mask=None, mems=None
+    ):
 
         output = self.dec_attn(
-            dec_inp, r_emb, r_w_bias, r_bias, attn_mask=dec_attn_mask, mems=mems
+            dec_inp,
+            r_emb,
+            r_w_bias,
+            r_bias,
+            attn_mask=dec_attn_mask,
+            mems=mems,
         )
         output = self.pos_ff(output)
 
@@ -827,7 +873,13 @@ class RelPartialLearnableDecoderLayer(nn.Module):
 
 class AdaptiveEmbedding(nn.Module):
     def __init__(
-        self, n_token, d_embed, d_proj, cutoffs, div_val=1, sample_softmax=False
+        self,
+        n_token,
+        d_embed,
+        d_proj,
+        cutoffs,
+        div_val=1,
+        sample_softmax=False,
     ):
         super(AdaptiveEmbedding, self).__init__()
 
@@ -849,13 +901,17 @@ class AdaptiveEmbedding(nn.Module):
                 nn.Embedding(n_token, d_embed, sparse=sample_softmax > 0)
             )
             if d_proj != d_embed:
-                self.emb_projs.append(nn.Parameter(torch.Tensor(d_proj, d_embed)))
+                self.emb_projs.append(
+                    nn.Parameter(torch.Tensor(d_proj, d_embed))
+                )
         else:
             for i in range(len(self.cutoffs)):
                 l_idx, r_idx = self.cutoff_ends[i], self.cutoff_ends[i + 1]
                 d_emb_i = d_embed // (div_val**i)
                 self.emb_layers.append(nn.Embedding(r_idx - l_idx, d_emb_i))
-                self.emb_projs.append(nn.Parameter(torch.Tensor(d_proj, d_emb_i)))
+                self.emb_projs.append(
+                    nn.Parameter(torch.Tensor(d_proj, d_emb_i))
+                )
 
     def forward(self, inp):
         if self.div_val == 1:
@@ -866,7 +922,9 @@ class AdaptiveEmbedding(nn.Module):
             param = next(self.parameters())
             inp_flat = inp.view(-1)
             emb_flat = torch.zeros(
-                [inp_flat.size(0), self.d_proj], dtype=param.dtype, device=param.device
+                [inp_flat.size(0), self.d_proj],
+                dtype=param.dtype,
+                device=param.device,
             )
             for i in range(len(self.cutoffs)):
                 l_idx, r_idx = self.cutoff_ends[i], self.cutoff_ends[i + 1]
@@ -910,7 +968,9 @@ class TransfoXLPreTrainedModel(nn.Module):
 
     def init_weight(self, weight):
         if self.config.init == "uniform":
-            nn.init.uniform_(weight, -self.config.init_range, self.config.init_range)
+            nn.init.uniform_(
+                weight, -self.config.init_range, self.config.init_range
+            )
         elif self.config.init == "normal":
             nn.init.normal_(weight, 0.0, self.config.init_std)
 
@@ -929,7 +989,9 @@ class TransfoXLPreTrainedModel(nn.Module):
             if hasattr(m, "emb_projs"):
                 for i in range(len(m.emb_projs)):
                     if m.emb_projs[i] is not None:
-                        nn.init.normal_(m.emb_projs[i], 0.0, self.config.proj_init_std)
+                        nn.init.normal_(
+                            m.emb_projs[i], 0.0, self.config.proj_init_std
+                        )
         elif classname.find("Embedding") != -1:
             if hasattr(m, "weight"):
                 self.init_weight(m.weight)
@@ -941,7 +1003,9 @@ class TransfoXLPreTrainedModel(nn.Module):
             if hasattr(m, "out_projs"):
                 for i in range(len(m.out_projs)):
                     if m.out_projs[i] is not None:
-                        nn.init.normal_(m.out_projs[i], 0.0, self.config.proj_init_std)
+                        nn.init.normal_(
+                            m.out_projs[i], 0.0, self.config.proj_init_std
+                        )
         elif classname.find("LayerNorm") != -1:
             if hasattr(m, "weight"):
                 nn.init.normal_(m.weight, 1.0, self.config.init_std)
@@ -989,14 +1053,24 @@ class TransfoXLPreTrainedModel(nn.Module):
         kwargs.pop("from_tf", None)
 
         if pretrained_model_name_or_path in PRETRAINED_MODEL_ARCHIVE_MAP:
-            archive_file = PRETRAINED_MODEL_ARCHIVE_MAP[pretrained_model_name_or_path]
-            config_file = PRETRAINED_CONFIG_ARCHIVE_MAP[pretrained_model_name_or_path]
+            archive_file = PRETRAINED_MODEL_ARCHIVE_MAP[
+                pretrained_model_name_or_path
+            ]
+            config_file = PRETRAINED_CONFIG_ARCHIVE_MAP[
+                pretrained_model_name_or_path
+            ]
         else:
-            archive_file = os.path.join(pretrained_model_name_or_path, WEIGHTS_NAME)
-            config_file = os.path.join(pretrained_model_name_or_path, CONFIG_NAME)
+            archive_file = os.path.join(
+                pretrained_model_name_or_path, WEIGHTS_NAME
+            )
+            config_file = os.path.join(
+                pretrained_model_name_or_path, CONFIG_NAME
+            )
         # redirect to the cache, if necessary
         try:
-            resolved_archive_file = cached_path(archive_file, cache_dir=cache_dir)
+            resolved_archive_file = cached_path(
+                archive_file, cache_dir=cache_dir
+            )
         except EnvironmentError:
             if pretrained_model_name_or_path in PRETRAINED_MODEL_ARCHIVE_MAP:
                 logger.error(
@@ -1017,7 +1091,9 @@ class TransfoXLPreTrainedModel(nn.Module):
                 )
             return None
         try:
-            resolved_config_file = cached_path(config_file, cache_dir=cache_dir)
+            resolved_config_file = cached_path(
+                config_file, cache_dir=cache_dir
+            )
         except EnvironmentError:
             if pretrained_model_name_or_path in PRETRAINED_CONFIG_ARCHIVE_MAP:
                 logger.error(
@@ -1077,7 +1153,9 @@ class TransfoXLPreTrainedModel(nn.Module):
             state_dict._metadata = metadata
 
         def load(module, prefix=""):
-            local_metadata = {} if metadata is None else metadata.get(prefix[:-1], {})
+            local_metadata = (
+                {} if metadata is None else metadata.get(prefix[:-1], {})
+            )
             module._load_from_state_dict(
                 state_dict,
                 prefix,
@@ -1192,8 +1270,12 @@ class TransfoXLModel(TransfoXLPreTrainedModel):
         self.attn_type = config.attn_type
 
         if not config.untie_r:
-            self.r_w_bias = nn.Parameter(torch.Tensor(self.n_head, self.d_head))
-            self.r_r_bias = nn.Parameter(torch.Tensor(self.n_head, self.d_head))
+            self.r_w_bias = nn.Parameter(
+                torch.Tensor(self.n_head, self.d_head)
+            )
+            self.r_r_bias = nn.Parameter(
+                torch.Tensor(self.n_head, self.d_head)
+            )
 
         self.layers = nn.ModuleList()
         if config.attn_type == 0:  # the default attention
@@ -1255,7 +1337,9 @@ class TransfoXLModel(TransfoXLPreTrainedModel):
             self.pos_emb = PositionalEmbedding(self.d_model)
         elif self.attn_type == 1:  # learnable
             self.r_emb = nn.Parameter(
-                torch.Tensor(self.n_layer, self.max_klen, self.n_head, self.d_head)
+                torch.Tensor(
+                    self.n_layer, self.max_klen, self.n_head, self.d_head
+                )
             )
             self.r_bias = nn.Parameter(
                 torch.Tensor(self.n_layer, self.max_klen, self.n_head)
@@ -1264,7 +1348,9 @@ class TransfoXLModel(TransfoXLPreTrainedModel):
             self.pos_emb = PositionalEmbedding(self.d_model)
         elif self.attn_type == 3:  # absolute deeper SA
             self.r_emb = nn.Parameter(
-                torch.Tensor(self.n_layer, self.max_klen, self.n_head, self.d_head)
+                torch.Tensor(
+                    self.n_layer, self.max_klen, self.n_head, self.d_head
+                )
             )
         self.apply(self.init_weights)
 
@@ -1333,7 +1419,8 @@ class TransfoXLModel(TransfoXLPreTrainedModel):
             else:
                 mask_shift_len = qlen
             dec_attn_mask = (
-                torch.triu(all_ones, 1 + mlen) + torch.tril(all_ones, -mask_shift_len)
+                torch.triu(all_ones, 1 + mlen)
+                + torch.tril(all_ones, -mask_shift_len)
             ).byte()[
                 :, :, None
             ]  # -1
@@ -1345,7 +1432,11 @@ class TransfoXLModel(TransfoXLPreTrainedModel):
         hids = []
         if self.attn_type == 0:  # default
             pos_seq = torch.arange(
-                klen - 1, -1, -1.0, device=word_emb.device, dtype=word_emb.dtype
+                klen - 1,
+                -1,
+                -1.0,
+                device=word_emb.device,
+                dtype=word_emb.dtype,
             )
             if self.clamp_len > 0:
                 pos_seq.clamp_(max=self.clamp_len)
@@ -1381,7 +1472,11 @@ class TransfoXLModel(TransfoXLPreTrainedModel):
                 )
         elif self.attn_type == 2:  # absolute
             pos_seq = torch.arange(
-                klen - 1, -1, -1.0, device=word_emb.device, dtype=word_emb.dtype
+                klen - 1,
+                -1,
+                -1.0,
+                device=word_emb.device,
+                dtype=word_emb.dtype,
             )
             if self.clamp_len > 0:
                 pos_seq.clamp_(max=self.clamp_len)
@@ -1394,7 +1489,9 @@ class TransfoXLModel(TransfoXLPreTrainedModel):
                 mems_i = None if mems is None else mems[i]
                 if mems_i is not None and i == 0:
                     mems_i += pos_emb[:mlen]
-                core_out = layer(core_out, dec_attn_mask=dec_attn_mask, mems=mems_i)
+                core_out = layer(
+                    core_out, dec_attn_mask=dec_attn_mask, mems=mems_i
+                )
         elif self.attn_type == 3:
             core_out = self.drop(word_emb)
 
@@ -1405,14 +1502,18 @@ class TransfoXLModel(TransfoXLPreTrainedModel):
                     cur_emb = self.r_emb[i][:-qlen]
                     cur_size = cur_emb.size(0)
                     if cur_size < mlen:
-                        cur_emb_pad = cur_emb[0:1].expand(mlen - cur_size, -1, -1)
+                        cur_emb_pad = cur_emb[0:1].expand(
+                            mlen - cur_size, -1, -1
+                        )
                         cur_emb = torch.cat([cur_emb_pad, cur_emb], 0)
                     else:
                         cur_emb = cur_emb[-mlen:]
                     mems_i += cur_emb.view(mlen, 1, -1)
                 core_out += self.r_emb[i][-qlen:].view(qlen, 1, -1)
 
-                core_out = layer(core_out, dec_attn_mask=dec_attn_mask, mems=mems_i)
+                core_out = layer(
+                    core_out, dec_attn_mask=dec_attn_mask, mems=mems_i
+                )
 
         core_out = self.drop(core_out)
 
@@ -1505,7 +1606,9 @@ class TransfoXLLMHeadModel(TransfoXLPreTrainedModel):
         # use sampled softmax
         if config.sample_softmax > 0:
             self.out_layer = nn.Linear(config.d_model, config.n_token)
-            self.sampler = LogUniformSampler(config.n_token, config.sample_softmax)
+            self.sampler = LogUniformSampler(
+                config.n_token, config.sample_softmax
+            )
         # use adaptive softmax (including standard softmax)
         else:
             self.crit = ProjectedAdaptiveLogSoftmax(
@@ -1538,9 +1641,13 @@ class TransfoXLLMHeadModel(TransfoXLPreTrainedModel):
                         and self.config.div_val == 1
                         and self.config.d_model != self.config.d_embed
                     ):
-                        self.crit.out_projs[i] = self.transformer.word_emb.emb_projs[0]
+                        self.crit.out_projs[
+                            i
+                        ] = self.transformer.word_emb.emb_projs[0]
                     elif tie_proj and self.config.div_val != 1:
-                        self.crit.out_projs[i] = self.transformer.word_emb.emb_projs[i]
+                        self.crit.out_projs[
+                            i
+                        ] = self.transformer.word_emb.emb_projs[i]
 
     def reset_length(self, tgt_len, ext_len, mem_len):
         self.transformer.reset_length(tgt_len, ext_len, mem_len)
@@ -1579,7 +1686,9 @@ class TransfoXLLMHeadModel(TransfoXLPreTrainedModel):
             )
             softmax_output = -F.log_softmax(logit, -1)[:, :, 0]
         else:
-            softmax_output = self.crit(pred_hid.view(-1, pred_hid.size(-1)), target)
+            softmax_output = self.crit(
+                pred_hid.view(-1, pred_hid.size(-1)), target
+            )
             if target is None:
                 softmax_output = softmax_output.view(bsz, tgt_len, -1)
             else:

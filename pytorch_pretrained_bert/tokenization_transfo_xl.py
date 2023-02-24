@@ -16,7 +16,12 @@
 """ Tokenization classes for Transformer XL model.
     Adapted from https://github.com/kimiyoung/transformer-xl.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import (
+    absolute_import,
+    division,
+    print_function,
+    unicode_literals,
+)
 
 import glob
 import logging
@@ -64,10 +69,14 @@ class TransfoXLTokenizer(object):
         The TransfoXLTokenizer.
         """
         if pretrained_model_name_or_path in PRETRAINED_VOCAB_ARCHIVE_MAP:
-            vocab_file = PRETRAINED_VOCAB_ARCHIVE_MAP[pretrained_model_name_or_path]
+            vocab_file = PRETRAINED_VOCAB_ARCHIVE_MAP[
+                pretrained_model_name_or_path
+            ]
         else:
             if os.path.isdir(pretrained_model_name_or_path):
-                vocab_file = os.path.join(pretrained_model_name_or_path, VOCAB_NAME)
+                vocab_file = os.path.join(
+                    pretrained_model_name_or_path, VOCAB_NAME
+                )
             else:
                 vocab_file = pretrained_model_name_or_path
         # redirect to the cache, if necessary
@@ -206,7 +215,12 @@ class TransfoXLTokenizer(object):
             )
 
     def encode_file(
-        self, path, ordered=False, verbose=False, add_eos=True, add_double_eos=False
+        self,
+        path,
+        ordered=False,
+        verbose=False,
+        add_eos=True,
+        add_double_eos=False,
     ):
         if verbose:
             print("encoding file {} ...".format(path))
@@ -252,7 +266,9 @@ class TransfoXLTokenizer(object):
             self.sym2idx[sym] = len(self.idx2sym) - 1
 
     def get_sym(self, idx):
-        assert 0 <= idx < len(self), "Index {} out of vocabulary range".format(idx)
+        assert 0 <= idx < len(self), "Index {} out of vocabulary range".format(
+            idx
+        )
         return self.idx2sym[idx]
 
     def get_idx(self, sym):
@@ -376,7 +392,9 @@ class LMOrderedIterator(object):
 
 
 class LMShuffledIterator(object):
-    def __init__(self, data, bsz, bptt, device="cpu", ext_len=None, shuffle=False):
+    def __init__(
+        self, data, bsz, bptt, device="cpu", ext_len=None, shuffle=False
+    ):
         """
         data -- list[LongTensor] -- there is no order among the LongTensors
         """
@@ -428,7 +446,8 @@ class LMShuffledIterator(object):
                         n_new = min(len(streams[i]) - 1, self.bptt - n_filled)
                         # first n_retain tokens are retained from last batch
                         data[
-                            n_retain + n_filled : n_retain + n_filled + n_new, i
+                            n_retain + n_filled : n_retain + n_filled + n_new,
+                            i,
                         ] = streams[i][:n_new]
                         target[n_filled : n_filled + n_new, i] = streams[i][
                             1 : n_new + 1
@@ -462,7 +481,14 @@ class LMShuffledIterator(object):
 
 class LMMultiFileIterator(LMShuffledIterator):
     def __init__(
-        self, paths, vocab, bsz, bptt, device="cpu", ext_len=None, shuffle=False
+        self,
+        paths,
+        vocab,
+        bsz,
+        bptt,
+        device="cpu",
+        ext_len=None,
+        shuffle=False,
     ):
 
         self.paths = paths
@@ -506,12 +532,18 @@ class TransfoXLCorpus(object):
             pretrained_model_name_or_path, *inputs, **kwargs
         )
         if pretrained_model_name_or_path in PRETRAINED_CORPUS_ARCHIVE_MAP:
-            corpus_file = PRETRAINED_CORPUS_ARCHIVE_MAP[pretrained_model_name_or_path]
+            corpus_file = PRETRAINED_CORPUS_ARCHIVE_MAP[
+                pretrained_model_name_or_path
+            ]
         else:
-            corpus_file = os.path.join(pretrained_model_name_or_path, CORPUS_NAME)
+            corpus_file = os.path.join(
+                pretrained_model_name_or_path, CORPUS_NAME
+            )
         # redirect to the cache, if necessary
         try:
-            resolved_corpus_file = cached_path(corpus_file, cache_dir=cache_dir)
+            resolved_corpus_file = cached_path(
+                corpus_file, cache_dir=cache_dir
+            )
         except EnvironmentError:
             logger.error(
                 "Corpus '{}' was not found in corpus list ({}). "
@@ -598,10 +630,14 @@ class TransfoXLCorpus(object):
         elif self.dataset == "lm1b":
             self.train = train_paths
             self.valid = self.vocab.encode_file(
-                os.path.join(path, "valid.txt"), ordered=False, add_double_eos=True
+                os.path.join(path, "valid.txt"),
+                ordered=False,
+                add_double_eos=True,
             )
             self.test = self.vocab.encode_file(
-                os.path.join(path, "test.txt"), ordered=False, add_double_eos=True
+                os.path.join(path, "test.txt"),
+                ordered=False,
+                add_double_eos=True,
             )
 
     def get_iterator(self, split, *args, **kwargs):
@@ -610,7 +646,9 @@ class TransfoXLCorpus(object):
                 data_iter = LMOrderedIterator(self.train, *args, **kwargs)
             elif self.dataset == "lm1b":
                 kwargs["shuffle"] = True
-                data_iter = LMMultiFileIterator(self.train, self.vocab, *args, **kwargs)
+                data_iter = LMMultiFileIterator(
+                    self.train, self.vocab, *args, **kwargs
+                )
         elif split in ["valid", "test"]:
             data = self.valid if split == "valid" else self.test
             if self.dataset in ["ptb", "wt2", "wt103", "enwik8", "text8"]:

@@ -15,7 +15,12 @@
 # limitations under the License.
 """PyTorch OpenAI GPT model."""
 
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import (
+    absolute_import,
+    division,
+    print_function,
+    unicode_literals,
+)
 
 import collections
 import copy
@@ -61,7 +66,9 @@ def load_tf_weights_in_openai_gpt(model, openai_checkpoint_folder_path):
     )
     shapes = json.load(
         open(
-            openai_checkpoint_folder_path + "/params_shapes.json", "r", encoding="utf-8"
+            openai_checkpoint_folder_path + "/params_shapes.json",
+            "r",
+            encoding="utf-8",
         )
     )
     offsets = np.cumsum([np.prod(shape) for shape in shapes])
@@ -70,7 +77,9 @@ def load_tf_weights_in_openai_gpt(model, openai_checkpoint_folder_path):
         for n in range(10)
     ]
     init_params = np.split(np.concatenate(init_params, 0), offsets)[:-1]
-    init_params = [param.reshape(shape) for param, shape in zip(init_params, shapes)]
+    init_params = [
+        param.reshape(shape) for param, shape in zip(init_params, shapes)
+    ]
 
     # This was used when we had a single embedding matrix for positions and tokens
     # init_params[0] = np.concatenate([init_params[1], init_params[0]], 0)
@@ -135,7 +144,12 @@ def gelu(x):
     return (
         0.5
         * x
-        * (1 + torch.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * torch.pow(x, 3))))
+        * (
+            1
+            + torch.tanh(
+                math.sqrt(2 / math.pi) * (x + 0.044715 * torch.pow(x, 3))
+            )
+        )
     )
 
 
@@ -193,7 +207,9 @@ class OpenAIGPTConfig(object):
             sys.version_info[0] == 2
             and isinstance(vocab_size_or_config_json_file, unicode)
         ):
-            with open(vocab_size_or_config_json_file, "r", encoding="utf-8") as reader:
+            with open(
+                vocab_size_or_config_json_file, "r", encoding="utf-8"
+            ) as reader:
                 json_config = json.loads(reader.read())
             for key, value in json_config.items():
                 self.__dict__[key] = value
@@ -293,7 +309,8 @@ class Attention(nn.Module):
         # [switch nx => n_state from Block to Attention to keep identical to TF implem]
         assert n_state % config.n_head == 0
         self.register_buffer(
-            "bias", torch.tril(torch.ones(n_ctx, n_ctx)).view(1, 1, n_ctx, n_ctx)
+            "bias",
+            torch.tril(torch.ones(n_ctx, n_ctx)).view(1, 1, n_ctx, n_ctx),
         )
         self.n_head = config.n_head
         self.split_size = n_state
@@ -323,7 +340,9 @@ class Attention(nn.Module):
         self.c_attn = prune_conv1d_layer(self.c_attn, index_attn, dim=1)
         self.c_proj = prune_conv1d_layer(self.c_proj, index, dim=0)
         # Update hyper params
-        self.split_size = (self.split_size // self.n_head) * (self.n_head - len(heads))
+        self.split_size = (self.split_size // self.n_head) * (
+            self.n_head - len(heads)
+        )
         self.n_head = self.n_head - len(heads)
 
     def _attn(self, q, k, v, head_mask=None):
@@ -479,9 +498,9 @@ class OpenAIGPTMultipleChoiceHead(nn.Module):
         # (bsz, num_choices, 1, hidden_size)
         multiple_choice_h = hidden_states.gather(2, mc_token_ids).squeeze(2)
         # (bsz, num_choices, hidden_size)
-        multiple_choice_h = self.dropout(multiple_choice_h.transpose(1, 2)).transpose(
-            1, 2
-        )
+        multiple_choice_h = self.dropout(
+            multiple_choice_h.transpose(1, 2)
+        ).transpose(1, 2)
         multiple_choice_logits = self.linear(multiple_choice_h).squeeze(-1)
         # (bsz, num_choices)
         return multiple_choice_logits
@@ -509,7 +528,9 @@ class OpenAIGPTPreTrainedModel(nn.Module):
         if isinstance(module, (nn.Linear, nn.Embedding)):
             # Slightly different from the TF version which uses truncated_normal for initialization
             # cf https://github.com/pytorch/pytorch/pull/5617
-            module.weight.data.normal_(mean=0.0, std=self.config.initializer_range)
+            module.weight.data.normal_(
+                mean=0.0, std=self.config.initializer_range
+            )
         elif isinstance(module, LayerNorm):
             module.bias.data.zero_()
             module.weight.data.fill_(1.0)
@@ -518,7 +539,11 @@ class OpenAIGPTPreTrainedModel(nn.Module):
 
     @classmethod
     def from_pretrained(
-        cls, pretrained_model_name_or_path, num_special_tokens=None, *inputs, **kwargs
+        cls,
+        pretrained_model_name_or_path,
+        num_special_tokens=None,
+        *inputs,
+        **kwargs,
     ):
         """
         Instantiate a OpenAIGPTPreTrainedModel from a pre-trained model file or a pytorch state dict.
@@ -547,14 +572,24 @@ class OpenAIGPTPreTrainedModel(nn.Module):
         kwargs.pop("from_tf", None)
 
         if pretrained_model_name_or_path in PRETRAINED_MODEL_ARCHIVE_MAP:
-            archive_file = PRETRAINED_MODEL_ARCHIVE_MAP[pretrained_model_name_or_path]
-            config_file = PRETRAINED_CONFIG_ARCHIVE_MAP[pretrained_model_name_or_path]
+            archive_file = PRETRAINED_MODEL_ARCHIVE_MAP[
+                pretrained_model_name_or_path
+            ]
+            config_file = PRETRAINED_CONFIG_ARCHIVE_MAP[
+                pretrained_model_name_or_path
+            ]
         else:
-            archive_file = os.path.join(pretrained_model_name_or_path, WEIGHTS_NAME)
-            config_file = os.path.join(pretrained_model_name_or_path, CONFIG_NAME)
+            archive_file = os.path.join(
+                pretrained_model_name_or_path, WEIGHTS_NAME
+            )
+            config_file = os.path.join(
+                pretrained_model_name_or_path, CONFIG_NAME
+            )
         # redirect to the cache, if necessary
         try:
-            resolved_archive_file = cached_path(archive_file, cache_dir=cache_dir)
+            resolved_archive_file = cached_path(
+                archive_file, cache_dir=cache_dir
+            )
         except EnvironmentError:
             if pretrained_model_name_or_path in PRETRAINED_MODEL_ARCHIVE_MAP:
                 logger.error(
@@ -575,7 +610,9 @@ class OpenAIGPTPreTrainedModel(nn.Module):
                 )
             return None
         try:
-            resolved_config_file = cached_path(config_file, cache_dir=cache_dir)
+            resolved_config_file = cached_path(
+                config_file, cache_dir=cache_dir
+            )
         except EnvironmentError:
             if pretrained_model_name_or_path in PRETRAINED_CONFIG_ARCHIVE_MAP:
                 logger.error(
@@ -649,7 +686,9 @@ class OpenAIGPTPreTrainedModel(nn.Module):
             state_dict._metadata = metadata
 
         def load(module, prefix=""):
-            local_metadata = {} if metadata is None else metadata.get(prefix[:-1], {})
+            local_metadata = (
+                {} if metadata is None else metadata.get(prefix[:-1], {})
+            )
             module._load_from_state_dict(
                 state_dict,
                 prefix,
@@ -692,7 +731,9 @@ class OpenAIGPTPreTrainedModel(nn.Module):
         # Add additional embeddings for special tokens if needed
         # This step also make sure we are still sharing the output and input embeddings after loading weights
         model.set_num_special_tokens(
-            num_special_tokens if num_special_tokens is not None else config.n_special
+            num_special_tokens
+            if num_special_tokens is not None
+            else config.n_special
         )
         return model
 
@@ -753,10 +794,14 @@ class OpenAIGPTModel(OpenAIGPTPreTrainedModel):
     ```
     """
 
-    def __init__(self, config, output_attentions=False, keep_multihead_output=False):
+    def __init__(
+        self, config, output_attentions=False, keep_multihead_output=False
+    ):
         super(OpenAIGPTModel, self).__init__(config)
         self.output_attentions = output_attentions
-        self.tokens_embed = nn.Embedding(config.total_tokens_embeddings, config.n_embd)
+        self.tokens_embed = nn.Embedding(
+            config.total_tokens_embeddings, config.n_embd
+        )
         self.positions_embed = nn.Embedding(config.n_positions, config.n_embd)
         self.drop = nn.Dropout(config.embd_pdrop)
         block = Block(
@@ -766,7 +811,9 @@ class OpenAIGPTModel(OpenAIGPTPreTrainedModel):
             output_attentions=output_attentions,
             keep_multihead_output=keep_multihead_output,
         )
-        self.h = nn.ModuleList([copy.deepcopy(block) for _ in range(config.n_layer)])
+        self.h = nn.ModuleList(
+            [copy.deepcopy(block) for _ in range(config.n_layer)]
+        )
 
         self.apply(self.init_weights)
 
@@ -821,9 +868,14 @@ class OpenAIGPTModel(OpenAIGPTPreTrainedModel):
         if head_mask is not None:
             if head_mask.dim() == 1:
                 head_mask = (
-                    head_mask.unsqueeze(0).unsqueeze(0).unsqueeze(-1).unsqueeze(-1)
+                    head_mask.unsqueeze(0)
+                    .unsqueeze(0)
+                    .unsqueeze(-1)
+                    .unsqueeze(-1)
                 )
-                head_mask = head_mask.expand_as(self.config.n_layer, -1, -1, -1, -1)
+                head_mask = head_mask.expand_as(
+                    self.config.n_layer, -1, -1, -1, -1
+                )
             elif head_mask.dim() == 2:
                 head_mask = (
                     head_mask.unsqueeze(1).unsqueeze(-1).unsqueeze(-1)
@@ -927,17 +979,23 @@ class OpenAIGPTLMHeadModel(OpenAIGPTPreTrainedModel):
     ```
     """
 
-    def __init__(self, config, output_attentions=False, keep_multihead_output=False):
+    def __init__(
+        self, config, output_attentions=False, keep_multihead_output=False
+    ):
         super(OpenAIGPTLMHeadModel, self).__init__(config)
         self.transformer = OpenAIGPTModel(
             config,
             output_attentions=output_attentions,
             keep_multihead_output=keep_multihead_output,
         )
-        self.lm_head = OpenAIGPTLMHead(self.transformer.tokens_embed.weight, config)
+        self.lm_head = OpenAIGPTLMHead(
+            self.transformer.tokens_embed.weight, config
+        )
         self.apply(self.init_weights)
 
-    def set_num_special_tokens(self, num_special_tokens, predict_special_tokens=True):
+    def set_num_special_tokens(
+        self, num_special_tokens, predict_special_tokens=True
+    ):
         """Update input and output embeddings with new embedding matrice
         Make sure we are sharing the embeddings
         """
@@ -973,7 +1031,8 @@ class OpenAIGPTLMHeadModel(OpenAIGPTPreTrainedModel):
             # Flatten the tokens
             loss_fct = CrossEntropyLoss(ignore_index=-1)
             loss = loss_fct(
-                shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1)
+                shift_logits.view(-1, shift_logits.size(-1)),
+                shift_labels.view(-1),
             )
             return loss
         if self.transformer.output_attentions:
@@ -1047,18 +1106,24 @@ class OpenAIGPTDoubleHeadsModel(OpenAIGPTPreTrainedModel):
     ```
     """
 
-    def __init__(self, config, output_attentions=False, keep_multihead_output=False):
+    def __init__(
+        self, config, output_attentions=False, keep_multihead_output=False
+    ):
         super(OpenAIGPTDoubleHeadsModel, self).__init__(config)
         self.transformer = OpenAIGPTModel(
             config,
             output_attentions=output_attentions,
             keep_multihead_output=keep_multihead_output,
         )
-        self.lm_head = OpenAIGPTLMHead(self.transformer.tokens_embed.weight, config)
+        self.lm_head = OpenAIGPTLMHead(
+            self.transformer.tokens_embed.weight, config
+        )
         self.multiple_choice_head = OpenAIGPTMultipleChoiceHead(config)
         self.apply(self.init_weights)
 
-    def set_num_special_tokens(self, num_special_tokens, predict_special_tokens=True):
+    def set_num_special_tokens(
+        self, num_special_tokens, predict_special_tokens=True
+    ):
         """Update input and output embeddings with new embedding matrice
         Make sure we are sharing the embeddings
         """
@@ -1097,13 +1162,16 @@ class OpenAIGPTDoubleHeadsModel(OpenAIGPTPreTrainedModel):
             loss_fct = CrossEntropyLoss(ignore_index=-1)
             losses.append(
                 loss_fct(
-                    shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1)
+                    shift_logits.view(-1, shift_logits.size(-1)),
+                    shift_labels.view(-1),
                 )
             )
         if mc_labels is not None:
             loss_fct = CrossEntropyLoss()
             losses.append(
-                loss_fct(mc_logits.view(-1, mc_logits.size(-1)), mc_labels.view(-1))
+                loss_fct(
+                    mc_logits.view(-1, mc_logits.size(-1)), mc_labels.view(-1)
+                )
             )
         if losses:
             return losses

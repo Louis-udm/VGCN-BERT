@@ -21,9 +21,8 @@ import os
 import sys
 from io import open
 
-import torch
-
 import pytorch_pretrained_bert.tokenization_transfo_xl as data_utils
+import torch
 from pytorch_pretrained_bert.modeling_transfo_xl import (
     CONFIG_NAME,
     WEIGHTS_NAME,
@@ -31,7 +30,10 @@ from pytorch_pretrained_bert.modeling_transfo_xl import (
     TransfoXLLMHeadModel,
     load_tf_weights_in_transfo_xl,
 )
-from pytorch_pretrained_bert.tokenization_transfo_xl import CORPUS_NAME, VOCAB_NAME
+from pytorch_pretrained_bert.tokenization_transfo_xl import (
+    CORPUS_NAME,
+    VOCAB_NAME,
+)
 
 if sys.version_info[0] == 2:
     import cPickle as pickle
@@ -64,7 +66,9 @@ def convert_transfo_xl_checkpoint_to_pytorch(
 
         corpus_dict_no_vocab = corpus.__dict__
         corpus_dict_no_vocab.pop("vocab", None)
-        pytorch_dataset_dump_path = pytorch_dump_folder_path + "/" + CORPUS_NAME
+        pytorch_dataset_dump_path = (
+            pytorch_dump_folder_path + "/" + CORPUS_NAME
+        )
         print("Save dataset to {}".format(pytorch_dataset_dump_path))
         torch.save(corpus_dict_no_vocab, pytorch_dataset_dump_path)
 
@@ -83,13 +87,19 @@ def convert_transfo_xl_checkpoint_to_pytorch(
             config = TransfoXLConfig()
         else:
             config = TransfoXLConfig(transfo_xl_config_file)
-        print("Building PyTorch model from configuration: {}".format(str(config)))
+        print(
+            "Building PyTorch model from configuration: {}".format(str(config))
+        )
         model = TransfoXLLMHeadModel(config)
 
         model = load_tf_weights_in_transfo_xl(model, config, tf_path)
         # Save pytorch-model
-        pytorch_weights_dump_path = os.path.join(pytorch_dump_folder_path, WEIGHTS_NAME)
-        pytorch_config_dump_path = os.path.join(pytorch_dump_folder_path, CONFIG_NAME)
+        pytorch_weights_dump_path = os.path.join(
+            pytorch_dump_folder_path, WEIGHTS_NAME
+        )
+        pytorch_config_dump_path = os.path.join(
+            pytorch_dump_folder_path, CONFIG_NAME
+        )
         print(
             "Save PyTorch model to {}".format(
                 os.path.abspath(pytorch_weights_dump_path)

@@ -13,7 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tokenization classes for OpenAI GPT."""
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import (
+    absolute_import,
+    division,
+    print_function,
+    unicode_literals,
+)
 
 import json
 import logging
@@ -108,12 +113,20 @@ class GPT2Tokenizer(object):
         Download and cache the pre-trained model file if needed.
         """
         if pretrained_model_name_or_path in PRETRAINED_VOCAB_ARCHIVE_MAP:
-            vocab_file = PRETRAINED_VOCAB_ARCHIVE_MAP[pretrained_model_name_or_path]
-            merges_file = PRETRAINED_MERGES_ARCHIVE_MAP[pretrained_model_name_or_path]
+            vocab_file = PRETRAINED_VOCAB_ARCHIVE_MAP[
+                pretrained_model_name_or_path
+            ]
+            merges_file = PRETRAINED_MERGES_ARCHIVE_MAP[
+                pretrained_model_name_or_path
+            ]
             special_tokens_file = None
         else:
-            vocab_file = os.path.join(pretrained_model_name_or_path, VOCAB_NAME)
-            merges_file = os.path.join(pretrained_model_name_or_path, MERGES_NAME)
+            vocab_file = os.path.join(
+                pretrained_model_name_or_path, VOCAB_NAME
+            )
+            merges_file = os.path.join(
+                pretrained_model_name_or_path, MERGES_NAME
+            )
             special_tokens_file = os.path.join(
                 pretrained_model_name_or_path, SPECIAL_TOKENS_NAME
             )
@@ -121,12 +134,16 @@ class GPT2Tokenizer(object):
                 special_tokens_file = None
             else:
                 logger.info(
-                    "loading special tokens file {}".format(special_tokens_file)
+                    "loading special tokens file {}".format(
+                        special_tokens_file
+                    )
                 )
         # redirect to the cache, if necessary
         try:
             resolved_vocab_file = cached_path(vocab_file, cache_dir=cache_dir)
-            resolved_merges_file = cached_path(merges_file, cache_dir=cache_dir)
+            resolved_merges_file = cached_path(
+                merges_file, cache_dir=cache_dir
+            )
         except EnvironmentError:
             if pretrained_model_name_or_path in PRETRAINED_VOCAB_ARCHIVE_MAP:
                 logger.error(
@@ -147,7 +164,10 @@ class GPT2Tokenizer(object):
                     )
                 )
             return None
-        if resolved_vocab_file == vocab_file and resolved_merges_file == merges_file:
+        if (
+            resolved_vocab_file == vocab_file
+            and resolved_merges_file == merges_file
+        ):
             logger.info("loading vocabulary file {}".format(vocab_file))
             logger.info("loading merges file {}".format(merges_file))
         else:
@@ -174,7 +194,9 @@ class GPT2Tokenizer(object):
         # Instantiate tokenizer.
         if special_tokens_file and "special_tokens" not in kwargs:
             special_tokens = (
-                open(special_tokens_file, encoding="utf-8").read().split("\n")[:-1]
+                open(special_tokens_file, encoding="utf-8")
+                .read()
+                .split("\n")[:-1]
             )
         else:
             special_tokens = kwargs.pop("special_tokens", [])
@@ -183,7 +205,7 @@ class GPT2Tokenizer(object):
             resolved_merges_file,
             special_tokens=special_tokens,
             *inputs,
-            **kwargs
+            **kwargs,
         )
         return tokenizer
 
@@ -228,9 +250,12 @@ class GPT2Tokenizer(object):
             self.special_tokens_decoder = {}
             return
         self.special_tokens = dict(
-            (tok, len(self.encoder) + i) for i, tok in enumerate(special_tokens)
+            (tok, len(self.encoder) + i)
+            for i, tok in enumerate(special_tokens)
         )
-        self.special_tokens_decoder = {v: k for k, v in self.special_tokens.items()}
+        self.special_tokens_decoder = {
+            v: k for k, v in self.special_tokens.items()
+        }
         logger.info("Special tokens {}".format(self.special_tokens))
 
     def bpe(self, token):
@@ -243,7 +268,9 @@ class GPT2Tokenizer(object):
             return token
 
         while True:
-            bigram = min(pairs, key=lambda pair: self.bpe_ranks.get(pair, float("inf")))
+            bigram = min(
+                pairs, key=lambda pair: self.bpe_ranks.get(pair, float("inf"))
+            )
             if bigram not in self.bpe_ranks:
                 break
             first, second = bigram
@@ -258,7 +285,11 @@ class GPT2Tokenizer(object):
                     new_word.extend(word[i:])
                     break
 
-                if word[i] == first and i < len(word) - 1 and word[i + 1] == second:
+                if (
+                    word[i] == first
+                    and i < len(word) - 1
+                    and word[i + 1] == second
+                ):
                     new_word.append(first + second)
                     i += 2
                 else:
@@ -281,8 +312,12 @@ class GPT2Tokenizer(object):
             if sys.version_info[0] == 2:
                 token = "".join(self.byte_encoder[ord(b)] for b in token)
             else:
-                token = "".join(self.byte_encoder[b] for b in token.encode("utf-8"))
-            bpe_tokens.extend(bpe_token for bpe_token in self.bpe(token).split(" "))
+                token = "".join(
+                    self.byte_encoder[b] for b in token.encode("utf-8")
+                )
+            bpe_tokens.extend(
+                bpe_token for bpe_token in self.bpe(token).split(" ")
+            )
         return bpe_tokens
 
     def convert_tokens_to_ids(self, tokens):
@@ -325,10 +360,15 @@ class GPT2Tokenizer(object):
         return self.convert_tokens_to_ids(self.tokenize(text))
 
     def decode(
-        self, tokens, skip_special_tokens=False, clean_up_tokenization_spaces=True
+        self,
+        tokens,
+        skip_special_tokens=False,
+        clean_up_tokenization_spaces=True,
     ):
         text = "".join(
-            self.convert_ids_to_tokens(tokens, skip_special_tokens=skip_special_tokens)
+            self.convert_ids_to_tokens(
+                tokens, skip_special_tokens=skip_special_tokens
+            )
         )
         text = bytearray([self.byte_decoder[c] for c in text]).decode(
             "utf-8", errors=self.errors

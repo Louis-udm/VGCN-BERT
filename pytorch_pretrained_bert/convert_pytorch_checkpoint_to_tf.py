@@ -21,11 +21,12 @@ import os
 import numpy as np
 import tensorflow as tf
 import torch
-
 from pytorch_pretrained_bert.modeling import BertModel
 
 
-def convert_pytorch_checkpoint_to_tf(model: BertModel, ckpt_dir: str, model_name: str):
+def convert_pytorch_checkpoint_to_tf(
+    model: BertModel, ckpt_dir: str, model_name: str
+):
 
     """
     :param model:BertModel Pytorch model instance to be converted
@@ -75,7 +76,9 @@ def convert_pytorch_checkpoint_to_tf(model: BertModel, ckpt_dir: str, model_name
 
     def assign_tf_var(tensor: np.ndarray, name: str):
         tmp_var = tf.Variable(initial_value=tensor)
-        tf_var = tf.get_variable(dtype=tmp_var.dtype, shape=tmp_var.shape, name=name)
+        tf_var = tf.get_variable(
+            dtype=tmp_var.dtype, shape=tmp_var.shape, name=name
+        )
         op = tf.assign(ref=tf_var, value=tmp_var)
         session.run(tf.variables_initializer([tmp_var, tf_var]))
         session.run(fetches=[op, tf_var])
@@ -91,7 +94,9 @@ def convert_pytorch_checkpoint_to_tf(model: BertModel, ckpt_dir: str, model_name
         print("{0}{1}initialized".format(tf_name, " " * (60 - len(tf_name))))
 
     saver = tf.train.Saver(tf_vars)
-    saver.save(session, os.path.join(ckpt_dir, model_name.replace("-", "_") + ".ckpt"))
+    saver.save(
+        session, os.path.join(ckpt_dir, model_name.replace("-", "_") + ".ckpt")
+    )
 
 
 def main(raw_args=None):

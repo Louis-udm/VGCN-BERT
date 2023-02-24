@@ -20,7 +20,6 @@ import argparse
 from io import open
 
 import torch
-
 from pytorch_pretrained_bert.modeling_gpt2 import (
     CONFIG_NAME,
     WEIGHTS_NAME,
@@ -79,5 +78,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     convert_gpt2_checkpoint_to_pytorch(
-        args.gpt2_checkpoint_path, args.gpt2_config_file, args.pytorch_dump_folder_path
+        args.gpt2_checkpoint_path,
+        args.gpt2_config_file,
+        args.pytorch_dump_folder_path,
     )

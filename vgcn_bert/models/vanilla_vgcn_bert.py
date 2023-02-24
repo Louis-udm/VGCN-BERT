@@ -1,8 +1,15 @@
+# -*- coding: utf-8 -*-
+
+# @author Zhibin.LU
+# @website: https://github.com/Louis-udm
+
+"""Vanilla combination of VGCN and BERT models"""
+
 import torch
 import torch.nn as nn
-
-from model_vgcn_bert import VocabGraphConvolution
 from pytorch_pretrained_bert.modeling import BertForSequenceClassification
+
+from .vgcn_bert import VocabGraphConvolution
 
 
 class Vanilla_VGCN_Bert(BertForSequenceClassification):
@@ -41,7 +48,9 @@ class Vanilla_VGCN_Bert(BertForSequenceClassification):
 
         words_embeddings = self.bert.embeddings.word_embeddings(input_ids)
         vocab_input = gcn_swop_eye.matmul(words_embeddings).transpose(1, 2)
-        gcn_vocab_out = self.vocab_gcn(vocab_adj_list, vocab_input).transpose(1, 2)
+        gcn_vocab_out = self.vocab_gcn(vocab_adj_list, vocab_input).transpose(
+            1, 2
+        )
 
         if self.output_attentions:
             all_attentions, _, pooled_output = self.bert(

@@ -13,7 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tokenization classes for OpenAI GPT."""
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import (
+    absolute_import,
+    division,
+    print_function,
+    unicode_literals,
+)
 
 import json
 import logging
@@ -94,12 +99,20 @@ class OpenAIGPTTokenizer(object):
         Download and cache the pre-trained model file if needed.
         """
         if pretrained_model_name_or_path in PRETRAINED_VOCAB_ARCHIVE_MAP:
-            vocab_file = PRETRAINED_VOCAB_ARCHIVE_MAP[pretrained_model_name_or_path]
-            merges_file = PRETRAINED_MERGES_ARCHIVE_MAP[pretrained_model_name_or_path]
+            vocab_file = PRETRAINED_VOCAB_ARCHIVE_MAP[
+                pretrained_model_name_or_path
+            ]
+            merges_file = PRETRAINED_MERGES_ARCHIVE_MAP[
+                pretrained_model_name_or_path
+            ]
             special_tokens_file = None
         else:
-            vocab_file = os.path.join(pretrained_model_name_or_path, VOCAB_NAME)
-            merges_file = os.path.join(pretrained_model_name_or_path, MERGES_NAME)
+            vocab_file = os.path.join(
+                pretrained_model_name_or_path, VOCAB_NAME
+            )
+            merges_file = os.path.join(
+                pretrained_model_name_or_path, MERGES_NAME
+            )
             special_tokens_file = os.path.join(
                 pretrained_model_name_or_path, SPECIAL_TOKENS_NAME
             )
@@ -107,12 +120,16 @@ class OpenAIGPTTokenizer(object):
                 special_tokens_file = None
             else:
                 logger.info(
-                    "loading special tokens file {}".format(special_tokens_file)
+                    "loading special tokens file {}".format(
+                        special_tokens_file
+                    )
                 )
         # redirect to the cache, if necessary
         try:
             resolved_vocab_file = cached_path(vocab_file, cache_dir=cache_dir)
-            resolved_merges_file = cached_path(merges_file, cache_dir=cache_dir)
+            resolved_merges_file = cached_path(
+                merges_file, cache_dir=cache_dir
+            )
         except EnvironmentError:
             if pretrained_model_name_or_path in PRETRAINED_VOCAB_ARCHIVE_MAP:
                 logger.error(
@@ -133,7 +150,10 @@ class OpenAIGPTTokenizer(object):
                     )
                 )
             return None
-        if resolved_vocab_file == vocab_file and resolved_merges_file == merges_file:
+        if (
+            resolved_vocab_file == vocab_file
+            and resolved_merges_file == merges_file
+        ):
             logger.info("loading vocabulary file {}".format(vocab_file))
             logger.info("loading merges file {}".format(merges_file))
         else:
@@ -160,7 +180,9 @@ class OpenAIGPTTokenizer(object):
         # Instantiate tokenizer.
         if special_tokens_file and "special_tokens" not in kwargs:
             special_tokens = (
-                open(special_tokens_file, encoding="utf-8").read().split("\n")[:-1]
+                open(special_tokens_file, encoding="utf-8")
+                .read()
+                .split("\n")[:-1]
             )
         else:
             special_tokens = kwargs.pop("special_tokens", [])
@@ -169,16 +191,20 @@ class OpenAIGPTTokenizer(object):
             resolved_merges_file,
             special_tokens=special_tokens,
             *inputs,
-            **kwargs
+            **kwargs,
         )
         return tokenizer
 
-    def __init__(self, vocab_file, merges_file, special_tokens=None, max_len=None):
+    def __init__(
+        self, vocab_file, merges_file, special_tokens=None, max_len=None
+    ):
         try:
             import ftfy
             import spacy
 
-            self.nlp = spacy.load("en", disable=["parser", "tagger", "ner", "textcat"])
+            self.nlp = spacy.load(
+                "en", disable=["parser", "tagger", "ner", "textcat"]
+            )
             self.fix_text = ftfy.fix_text
         except ImportError:
             logger.warning(
@@ -186,7 +212,9 @@ class OpenAIGPTTokenizer(object):
             )
             self.nlp = BasicTokenizer(
                 do_lower_case=True,
-                never_split=special_tokens if special_tokens is not None else [],
+                never_split=special_tokens
+                if special_tokens is not None
+                else [],
             )
             self.fix_text = None
 
@@ -214,9 +242,12 @@ class OpenAIGPTTokenizer(object):
             self.special_tokens_decoder = {}
             return
         self.special_tokens = dict(
-            (tok, len(self.encoder) + i) for i, tok in enumerate(special_tokens)
+            (tok, len(self.encoder) + i)
+            for i, tok in enumerate(special_tokens)
         )
-        self.special_tokens_decoder = {v: k for k, v in self.special_tokens.items()}
+        self.special_tokens_decoder = {
+            v: k for k, v in self.special_tokens.items()
+        }
         if self.fix_text is None:
             # Using BERT's BasicTokenizer: we can update the tokenizer
             self.nlp.never_split = special_tokens
@@ -232,7 +263,9 @@ class OpenAIGPTTokenizer(object):
             return token + "</w>"
 
         while True:
-            bigram = min(pairs, key=lambda pair: self.bpe_ranks.get(pair, float("inf")))
+            bigram = min(
+                pairs, key=lambda pair: self.bpe_ranks.get(pair, float("inf"))
+            )
             if bigram not in self.bpe_ranks:
                 break
             first, second = bigram
@@ -247,7 +280,11 @@ class OpenAIGPTTokenizer(object):
                     new_word.extend(word[i:])
                     break
 
-                if word[i] == first and i < len(word) - 1 and word[i + 1] == second:
+                if (
+                    word[i] == first
+                    and i < len(word) - 1
+                    and word[i + 1] == second
+                ):
                     new_word.append(first + second)
                     i += 2
                 else:
@@ -321,7 +358,9 @@ class OpenAIGPTTokenizer(object):
     def encode(self, text):
         return self.convert_tokens_to_ids(self.tokenize(text))
 
-    def decode(self, ids, skip_special_tokens=False, clean_up_tokenization_spaces=True):
+    def decode(
+        self, ids, skip_special_tokens=False, clean_up_tokenization_spaces=True
+    ):
         """Converts a sequence of ids in a string."""
         tokens = self.convert_ids_to_tokens(
             ids, skip_special_tokens=skip_special_tokens

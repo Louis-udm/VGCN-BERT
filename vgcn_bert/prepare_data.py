@@ -1,19 +1,13 @@
 # -*- coding: utf-8 -*-
 
-# # # #
-# prepare_data.py
 # @author Zhibin.LU
-# @created 2019-05-22T09:28:29.705Z-04:00
-# @last-modified 2020-04-15T14:51:35.359Z-04:00
-# @website: https://louis-udm.github.io
-# @description: pre-process data and prepare the vocabulary graph
-# # # #
+# @website: https://github.com/Louis-udm
+
+"""pre-process data and prepare the vocabulary graph"""
 
 import argparse
 import os
 import pickle as pkl
-
-
 import random
 import re
 import sys
@@ -82,26 +76,18 @@ bert_lower_case = True
 
 print("---data prepare configure---")
 print(
-    "Data set: ",
-    cfg_ds,
-    "freq_min_for_word_choice",
-    freq_min_for_word_choice,
-    "window_size",
-    window_size,
+    f"Data set:  {cfg_ds}",
+    f"freq_min_for_word_choice {freq_min_for_word_choice}",
+    f"window_size {window_size}",
 )
 print(
-    "del_stop_words",
-    cfg_del_stop_words,
-    "use_bert_tokenizer_at_clean",
-    cfg_use_bert_tokenizer_at_clean,
+    f"del_stop_words {cfg_del_stop_words}",
+    f"use_bert_tokenizer_at_clean {cfg_use_bert_tokenizer_at_clean}",
 )
 print(
-    "tfidf-mode",
-    tfidf_mode,
-    "bert_model_scale",
-    bert_model_scale,
-    "bert_lower_case",
-    bert_lower_case,
+    f"tfidf-mode {tfidf_mode}",
+    f"bert_model_scale {bert_model_scale}",
+    f"bert_lower_case {bert_lower_case}",
 )
 print("\n")
 
@@ -129,7 +115,6 @@ def del_http_user_tokenize(tweet):
     return tweet
 
 
-
 if cfg_ds == "sst":
     from get_sst_data import DataReader
 
@@ -149,7 +134,11 @@ if cfg_ds == "sst":
     trainset = {}
     validset = {}
     testset = {}
-    for data, dataset in [(train, trainset), (valid, validset), (test, testset)]:
+    for data, dataset in [
+        (train, trainset),
+        (valid, validset),
+        (test, testset),
+    ]:
         label = []
         all_text = []
         for line in data:
@@ -173,13 +162,17 @@ elif cfg_ds == "cola":
     )
     train_valid_df = shuffle(train_valid_df)
     # use dev set as test set, because we can not get the ground true label of the real test set.
-    test_df = pd.read_csv("data/CoLA/dev.tsv", encoding="utf-8", header=None, sep="\t")
+    test_df = pd.read_csv(
+        "data/CoLA/dev.tsv", encoding="utf-8", header=None, sep="\t"
+    )
     test_df = shuffle(test_df)
     train_valid_size = train_valid_df[1].count()
     valid_size = int(train_valid_size * valid_data_taux)
     train_size = train_valid_size - valid_size
     test_size = test_df[1].count()
-    print("CoLA train_valid Total:", train_valid_size, "test Total:", test_size)
+    print(
+        "CoLA train_valid Total:", train_valid_size, "test Total:", test_size
+    )
     df = pd.concat((train_valid_df, test_df))
     corpus = df[3]
     y = df[1].values  # y.as_matrix()
@@ -215,7 +208,6 @@ print(
         np.array(sen_len_list).mean(),
     )
 )
-
 
 
 """
@@ -293,7 +285,10 @@ for i, doc_content in enumerate(doc_content_list):
         # if tmp_word_freq[word] >= freq_min_for_word_choice:
         if cfg_ds in ("mr", "sst", "cola"):
             doc_words.append(word)
-        elif word not in stop_words and tmp_word_freq[word] >= freq_min_for_word_choice:
+        elif (
+            word not in stop_words
+            and tmp_word_freq[word] >= freq_min_for_word_choice
+        ):
             doc_words.append(word)
     doc_str = " ".join(doc_words).strip()
     if doc_str == "":
@@ -302,8 +297,7 @@ for i, doc_content in enumerate(doc_content_list):
         # doc_str = 'normal'
         # doc_str = doc_content
         print(
-            "No.",
-            i,
+            f"No. {i}",
             "is a empty doc after treat, replaced by '%s'. original:%s"
             % (doc_str, doc_content),
         )
@@ -311,8 +305,6 @@ for i, doc_content in enumerate(doc_content_list):
 
 
 print("Total", count_void_doc, " docs are empty.")
-
-
 
 
 min_len = 10000
@@ -338,7 +330,6 @@ print("Max_len : " + str(max_len) + " id: " + str(max_len_id))
 print("Average_len : " + str(aver_len))
 
 
-
 """
 Build graph
 """
@@ -355,7 +346,6 @@ if cfg_ds in ("mr", "sst", "cola"):
     train_y_prob = y_prob[:train_size]
     valid_y_prob = y_prob[train_size : train_size + valid_size]
     test_y_prob = y_prob[train_size + valid_size :]
-
 
 
 # build vocab using whole corpus(train+valid+test+genelization)
@@ -442,7 +432,9 @@ for doc_words in train_valid_docs:
             window = words[j : j + window_size]
             windows.append(window)
 
-print("Train_valid size:", len(train_valid_docs), "Window number:", len(windows))
+print(
+    "Train_valid size:", len(train_valid_docs), "Window number:", len(windows)
+)
 
 word_window_freq = {}
 for window in windows:
@@ -484,7 +476,6 @@ for window in windows:
             else:
                 word_pair_count[word_pair_str] = 1
             appeared.add(word_pair_str)
-
 
 
 from math import log
@@ -541,7 +532,6 @@ print("max_pmi:", tmp_max_pmi, "min_pmi:", tmp_min_pmi)
 print("max_npmi:", tmp_max_npmi, "min_npmi:", tmp_min_npmi)
 
 
-
 print("Calculate doc-word tf-idf weight")
 
 n_docs = len(shuffled_clean_docs)
@@ -595,7 +585,9 @@ node_size = vocab_size + corpus_size
 
 adj_list = []
 adj_list.append(
-    sp.csr_matrix((weight, (row, col)), shape=(node_size, node_size), dtype=np.float32)
+    sp.csr_matrix(
+        (weight, (row, col)), shape=(node_size, node_size), dtype=np.float32
+    )
 )
 for i, adj in enumerate(adj_list):
     adj_list[i] = adj + adj.T.multiply(adj.T > adj) - adj.multiply(adj.T > adj)

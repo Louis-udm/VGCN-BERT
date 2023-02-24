@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+
+# @author Zhibin.LU
+# @website: https://github.com/Louis-udm
+
+"""download sst dataset"""
+
+
 class DataReader:
     """
     Get dataset from files

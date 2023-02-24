@@ -1,21 +1,15 @@
 # -*- coding: utf-8 -*-
 
-# # # #
-# model_vgcn_bert.py
 # @author Zhibin.LU
-# @created 2019-09-10T14:27:18.572Z-04:00
-# @last-modified 2020-05-08T01:25:48.711Z-04:00
-# @website: https://louis-udm.github.io
-# @description: Models
-# # # #
+# @website: https://github.com/Louis-udm
 
+"""VGCN-BERT related models"""
 
 import math
 
 import torch
 import torch.nn as nn
 import torch.nn.init as init
-
 from pytorch_pretrained_bert.modeling import (
     BertEmbeddings,
     BertEncoder,
@@ -52,7 +46,9 @@ class VocabGraphConvolution(nn.Module):
         self.out_dim = out_dim
 
         for i in range(self.num_adj):
-            setattr(self, "W%d_vh" % i, nn.Parameter(torch.randn(voc_dim, hid_dim)))
+            setattr(
+                self, "W%d_vh" % i, nn.Parameter(torch.randn(voc_dim, hid_dim))
+            )
 
         self.fc_hc = nn.Linear(hid_dim, out_dim)
         self.act_func = nn.ReLU()
@@ -62,7 +58,11 @@ class VocabGraphConvolution(nn.Module):
 
     def reset_parameters(self):
         for n, p in self.named_parameters():
-            if n.startswith("W") or n.startswith("a") or n in ("W", "a", "dense"):
+            if (
+                n.startswith("W")
+                or n.startswith("a")
+                or n in ("W", "a", "dense")
+            ):
                 init.kaiming_uniform_(p, a=math.sqrt(5))
 
     def forward(self, vocab_adj_list, X_dv, add_linear_mapping_term=False):
@@ -132,7 +132,9 @@ class Pretrain_VGCN(nn.Module):
         self.vocab_gcn = VocabGraphConvolution(
             gcn_adj_dim, gcn_adj_num, 128, gcn_embedding_dim
         )  # 192/256
-        self.classifier = nn.Linear(gcn_embedding_dim * word_emb_dim, num_labels)
+        self.classifier = nn.Linear(
+            gcn_embedding_dim * word_emb_dim, num_labels
+        )
 
     def forward(
         self,
@@ -144,7 +146,9 @@ class Pretrain_VGCN(nn.Module):
     ):
         words_embeddings = self.word_emb(input_ids)
         vocab_input = gcn_swop_eye.matmul(words_embeddings).transpose(1, 2)
-        gcn_vocab_out = self.vocab_gcn(vocab_adj_list, vocab_input).transpose(1, 2)
+        gcn_vocab_out = self.vocab_gcn(vocab_adj_list, vocab_input).transpose(
+            1, 2
+        )
         gcn_vocab_out = self.dropout(self.act_func(gcn_vocab_out))
         out = self.classifier(gcn_vocab_out.flatten(start_dim=1))
         return out
@@ -226,10 +230,14 @@ class VGCNBertEmbeddings(BertEmbeddings):
 
         if self.gcn_embedding_dim > 0:
             embeddings = (
-                gcn_words_embeddings + position_embeddings + token_type_embeddings
+                gcn_words_embeddings
+                + position_embeddings
+                + token_type_embeddings
             )
         else:
-            embeddings = words_embeddings + position_embeddings + token_type_embeddings
+            embeddings = (
+                words_embeddings + position_embeddings + token_type_embeddings
+            )
 
         embeddings = self.LayerNorm(embeddings)
         embeddings = self.dropout(embeddings)
@@ -318,7 +326,11 @@ class VGCN_Bert(BertModel):
         if attention_mask is None:
             attention_mask = torch.ones_like(input_ids)
         embedding_output = self.embeddings(
-            vocab_adj_list, gcn_swop_eye, input_ids, token_type_ids, attention_mask
+            vocab_adj_list,
+            gcn_swop_eye,
+            input_ids,
+            token_type_ids,
+            attention_mask,
         )
 
         # We create a 3D attention mask from a 2D tensor mask.
@@ -346,7 +358,10 @@ class VGCN_Bert(BertModel):
         if head_mask is not None:
             if head_mask.dim() == 1:
                 head_mask = (
-                    head_mask.unsqueeze(0).unsqueeze(0).unsqueeze(-1).unsqueeze(-1)
+                    head_mask.unsqueeze(0)
+                    .unsqueeze(0)
+                    .unsqueeze(-1)
+                    .unsqueeze(-1)
                 )
                 head_mask = head_mask.expand_as(
                     self.config.num_hidden_layers, -1, -1, -1, -1

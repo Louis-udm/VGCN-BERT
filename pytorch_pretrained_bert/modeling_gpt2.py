@@ -15,7 +15,12 @@
 # limitations under the License.
 """PyTorch OpenAI GPT-2 model."""
 
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import (
+    absolute_import,
+    division,
+    print_function,
+    unicode_literals,
+)
 
 import collections
 import copy
@@ -130,7 +135,12 @@ def gelu(x):
     return (
         0.5
         * x
-        * (1 + torch.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * torch.pow(x, 3))))
+        * (
+            1
+            + torch.tanh(
+                math.sqrt(2 / math.pi) * (x + 0.044715 * torch.pow(x, 3))
+            )
+        )
     )
 
 
@@ -178,7 +188,9 @@ class GPT2Config(object):
             sys.version_info[0] == 2
             and isinstance(vocab_size_or_config_json_file, unicode)
         ):
-            with open(vocab_size_or_config_json_file, "r", encoding="utf-8") as reader:
+            with open(
+                vocab_size_or_config_json_file, "r", encoding="utf-8"
+            ) as reader:
                 json_config = json.loads(reader.read())
             for key, value in json_config.items():
                 self.__dict__[key] = value
@@ -270,7 +282,8 @@ class Attention(nn.Module):
         # [switch nx => n_state from Block to Attention to keep identical to TF implem]
         assert n_state % config.n_head == 0
         self.register_buffer(
-            "bias", torch.tril(torch.ones(n_ctx, n_ctx)).view(1, 1, n_ctx, n_ctx)
+            "bias",
+            torch.tril(torch.ones(n_ctx, n_ctx)).view(1, 1, n_ctx, n_ctx),
         )
         self.n_head = config.n_head
         self.split_size = n_state
@@ -300,7 +313,9 @@ class Attention(nn.Module):
         self.c_attn = prune_conv1d_layer(self.c_attn, index_attn, dim=1)
         self.c_proj = prune_conv1d_layer(self.c_proj, index, dim=0)
         # Update hyper params
-        self.split_size = (self.split_size // self.n_head) * (self.n_head - len(heads))
+        self.split_size = (self.split_size // self.n_head) * (
+            self.n_head - len(heads)
+        )
         self.n_head = self.n_head - len(heads)
 
     def _attn(self, q, k, v, head_mask=None):
@@ -331,9 +346,13 @@ class Attention(nn.Module):
         new_x_shape = x.size()[:-1] + (self.n_head, x.size(-1) // self.n_head)
         x = x.view(*new_x_shape)  # in Tensorflow implem: fct split_states
         if k:
-            return x.permute(0, 2, 3, 1)  # (batch, head, head_features, seq_length)
+            return x.permute(
+                0, 2, 3, 1
+            )  # (batch, head, head_features, seq_length)
         else:
-            return x.permute(0, 2, 1, 3)  # (batch, head, seq_length, head_features)
+            return x.permute(
+                0, 2, 1, 3
+            )  # (batch, head, seq_length, head_features)
 
     def forward(self, x, layer_past=None, head_mask=None):
         x = self.c_attn(x)
@@ -468,9 +487,9 @@ class GPT2MultipleChoiceHead(nn.Module):
         # (bsz, num_choices, 1, hidden_size)
         multiple_choice_h = hidden_states.gather(2, mc_token_ids).squeeze(2)
         # (bsz, num_choices, hidden_size)
-        multiple_choice_h = self.dropout(multiple_choice_h.transpose(1, 2)).transpose(
-            1, 2
-        )
+        multiple_choice_h = self.dropout(
+            multiple_choice_h.transpose(1, 2)
+        ).transpose(1, 2)
         multiple_choice_logits = self.linear(multiple_choice_h).squeeze(-1)
         # (bsz, num_choices)
         return multiple_choice_logits
@@ -498,7 +517,9 @@ class GPT2PreTrainedModel(nn.Module):
         if isinstance(module, (nn.Linear, nn.Embedding)):
             # Slightly different from the TF version which uses truncated_normal for initialization
             # cf https://github.com/pytorch/pytorch/pull/5617
-            module.weight.data.normal_(mean=0.0, std=self.config.initializer_range)
+            module.weight.data.normal_(
+                mean=0.0, std=self.config.initializer_range
+            )
         elif isinstance(module, LayerNorm):
             module.bias.data.zero_()
             module.weight.data.fill_(1.0)
@@ -536,14 +557,24 @@ class GPT2PreTrainedModel(nn.Module):
         kwargs.pop("num_special_tokens", None)
 
         if pretrained_model_name_or_path in PRETRAINED_MODEL_ARCHIVE_MAP:
-            archive_file = PRETRAINED_MODEL_ARCHIVE_MAP[pretrained_model_name_or_path]
-            config_file = PRETRAINED_CONFIG_ARCHIVE_MAP[pretrained_model_name_or_path]
+            archive_file = PRETRAINED_MODEL_ARCHIVE_MAP[
+                pretrained_model_name_or_path
+            ]
+            config_file = PRETRAINED_CONFIG_ARCHIVE_MAP[
+                pretrained_model_name_or_path
+            ]
         else:
-            archive_file = os.path.join(pretrained_model_name_or_path, WEIGHTS_NAME)
-            config_file = os.path.join(pretrained_model_name_or_path, CONFIG_NAME)
+            archive_file = os.path.join(
+                pretrained_model_name_or_path, WEIGHTS_NAME
+            )
+            config_file = os.path.join(
+                pretrained_model_name_or_path, CONFIG_NAME
+            )
         # redirect to the cache, if necessary
         try:
-            resolved_archive_file = cached_path(archive_file, cache_dir=cache_dir)
+            resolved_archive_file = cached_path(
+                archive_file, cache_dir=cache_dir
+            )
         except EnvironmentError:
             if pretrained_model_name_or_path in PRETRAINED_MODEL_ARCHIVE_MAP:
                 logger.error(
@@ -564,7 +595,9 @@ class GPT2PreTrainedModel(nn.Module):
                 )
             return None
         try:
-            resolved_config_file = cached_path(config_file, cache_dir=cache_dir)
+            resolved_config_file = cached_path(
+                config_file, cache_dir=cache_dir
+            )
         except EnvironmentError:
             if pretrained_model_name_or_path in PRETRAINED_CONFIG_ARCHIVE_MAP:
                 logger.error(
@@ -638,7 +671,9 @@ class GPT2PreTrainedModel(nn.Module):
             state_dict._metadata = metadata
 
         def load(module, prefix=""):
-            local_metadata = {} if metadata is None else metadata.get(prefix[:-1], {})
+            local_metadata = (
+                {} if metadata is None else metadata.get(prefix[:-1], {})
+            )
             module._load_from_state_dict(
                 state_dict,
                 prefix,
@@ -681,7 +716,9 @@ class GPT2PreTrainedModel(nn.Module):
         # Add additional embeddings for special tokens if needed
         # This step also make sure we are still sharing the output and input embeddings after loading weights
         model.set_num_special_tokens(
-            num_special_tokens if num_special_tokens is not None else config.n_special
+            num_special_tokens
+            if num_special_tokens is not None
+            else config.n_special
         )
         return model
 
@@ -747,7 +784,9 @@ class GPT2Model(GPT2PreTrainedModel):
     ```
     """
 
-    def __init__(self, config, output_attentions=False, keep_multihead_output=False):
+    def __init__(
+        self, config, output_attentions=False, keep_multihead_output=False
+    ):
         super(GPT2Model, self).__init__(config)
         self.output_attentions = output_attentions
         self.wte = nn.Embedding(config.total_tokens_embeddings, config.n_embd)
@@ -760,7 +799,9 @@ class GPT2Model(GPT2PreTrainedModel):
             output_attentions=output_attentions,
             keep_multihead_output=keep_multihead_output,
         )
-        self.h = nn.ModuleList([copy.deepcopy(block) for _ in range(config.n_layer)])
+        self.h = nn.ModuleList(
+            [copy.deepcopy(block) for _ in range(config.n_layer)]
+        )
         self.ln_f = LayerNorm(config.n_embd, eps=config.layer_norm_epsilon)
 
         self.apply(self.init_weights)
@@ -773,13 +814,15 @@ class GPT2Model(GPT2PreTrainedModel):
         self.config.n_special = num_special_tokens
         # Build new embeddings and initialize all new embeddings (in particular the special tokens)
         old_embed = self.wte
-        self.wte = nn.Embedding(self.config.total_tokens_embeddings, self.config.n_embd)
+        self.wte = nn.Embedding(
+            self.config.total_tokens_embeddings, self.config.n_embd
+        )
         self.wte.to(old_embed.weight.device)
         self.init_weights(self.wte)
         # Copy word embeddings from the previous weights
-        self.wte.weight.data[: self.config.vocab_size, :] = old_embed.weight.data[
+        self.wte.weight.data[
             : self.config.vocab_size, :
-        ]
+        ] = old_embed.weight.data[: self.config.vocab_size, :]
 
     def prune_heads(self, heads_to_prune):
         """Prunes heads of the model.
@@ -823,9 +866,14 @@ class GPT2Model(GPT2PreTrainedModel):
         if head_mask is not None:
             if head_mask.dim() == 1:
                 head_mask = (
-                    head_mask.unsqueeze(0).unsqueeze(0).unsqueeze(-1).unsqueeze(-1)
+                    head_mask.unsqueeze(0)
+                    .unsqueeze(0)
+                    .unsqueeze(-1)
+                    .unsqueeze(-1)
                 )
-                head_mask = head_mask.expand_as(self.config.n_layer, -1, -1, -1, -1)
+                head_mask = head_mask.expand_as(
+                    self.config.n_layer, -1, -1, -1, -1
+                )
             elif head_mask.dim() == 2:
                 head_mask = (
                     head_mask.unsqueeze(1).unsqueeze(-1).unsqueeze(-1)
@@ -921,7 +969,9 @@ class GPT2LMHeadModel(GPT2PreTrainedModel):
     ```
     """
 
-    def __init__(self, config, output_attentions=False, keep_multihead_output=False):
+    def __init__(
+        self, config, output_attentions=False, keep_multihead_output=False
+    ):
         super(GPT2LMHeadModel, self).__init__(config)
         self.transformer = GPT2Model(
             config,
@@ -931,7 +981,9 @@ class GPT2LMHeadModel(GPT2PreTrainedModel):
         self.lm_head = GPT2LMHead(self.transformer.wte.weight, config)
         self.apply(self.init_weights)
 
-    def set_num_special_tokens(self, num_special_tokens, predict_special_tokens=True):
+    def set_num_special_tokens(
+        self, num_special_tokens, predict_special_tokens=True
+    ):
         """Update input and output embeddings with new embedding matrice
         Make sure we are sharing the embeddings
         """
@@ -940,7 +992,8 @@ class GPT2LMHeadModel(GPT2PreTrainedModel):
         ) = predict_special_tokens
         self.transformer.set_num_special_tokens(num_special_tokens)
         self.lm_head.set_embeddings_weights(
-            self.transformer.wte.weight, predict_special_tokens=predict_special_tokens
+            self.transformer.wte.weight,
+            predict_special_tokens=predict_special_tokens,
         )
 
     def forward(
@@ -969,7 +1022,8 @@ class GPT2LMHeadModel(GPT2PreTrainedModel):
             # Flatten the tokens
             loss_fct = CrossEntropyLoss(ignore_index=-1)
             loss = loss_fct(
-                shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1)
+                shift_logits.view(-1, shift_logits.size(-1)),
+                shift_labels.view(-1),
             )
             return loss
         if self.transformer.output_attentions:
@@ -1031,7 +1085,9 @@ class GPT2DoubleHeadsModel(GPT2PreTrainedModel):
     ```
     """
 
-    def __init__(self, config, output_attentions=False, keep_multihead_output=False):
+    def __init__(
+        self, config, output_attentions=False, keep_multihead_output=False
+    ):
         super(GPT2DoubleHeadsModel, self).__init__(config)
         self.transformer = GPT2Model(
             config,
@@ -1042,7 +1098,9 @@ class GPT2DoubleHeadsModel(GPT2PreTrainedModel):
         self.multiple_choice_head = GPT2MultipleChoiceHead(config)
         self.apply(self.init_weights)
 
-    def set_num_special_tokens(self, num_special_tokens, predict_special_tokens=True):
+    def set_num_special_tokens(
+        self, num_special_tokens, predict_special_tokens=True
+    ):
         """Update input and output embeddings with new embedding matrice
         Make sure we are sharing the embeddings
         """
@@ -1051,7 +1109,8 @@ class GPT2DoubleHeadsModel(GPT2PreTrainedModel):
         ) = predict_special_tokens
         self.transformer.set_num_special_tokens(num_special_tokens)
         self.lm_head.set_embeddings_weights(
-            self.transformer.wte.weight, predict_special_tokens=predict_special_tokens
+            self.transformer.wte.weight,
+            predict_special_tokens=predict_special_tokens,
         )
 
     def forward(
@@ -1083,13 +1142,16 @@ class GPT2DoubleHeadsModel(GPT2PreTrainedModel):
             loss_fct = CrossEntropyLoss(ignore_index=-1)
             losses.append(
                 loss_fct(
-                    shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1)
+                    shift_logits.view(-1, shift_logits.size(-1)),
+                    shift_labels.view(-1),
                 )
             )
         if mc_labels is not None:
             loss_fct = CrossEntropyLoss()
             losses.append(
-                loss_fct(mc_logits.view(-1, mc_logits.size(-1)), mc_labels.view(-1))
+                loss_fct(
+                    mc_logits.view(-1, mc_logits.size(-1)), mc_labels.view(-1)
+                )
             )
         if losses:
             return losses

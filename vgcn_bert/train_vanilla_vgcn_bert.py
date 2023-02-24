@@ -1,19 +1,13 @@
 # -*- coding: utf-8 -*-
 
-# # # #
-# train_vgcn_bert.py
 # @author Zhibin.LU
-# @created 2019-09-01T19:41:49.613Z-04:00
-# @last-modified 2020-05-08T01:25:03.040Z-04:00
-# @website: https://louis-udm.github.io
-# @description : Train vgcn_bert model
-# # # #
+# @website: https://github.com/Louis-udm
+
+"""Train the vanilla vgcn_bert model"""
 
 
 import argparse
 import gc
-
-# %%
 import os
 import pickle as pkl
 import random
@@ -23,11 +17,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-# from tqdm import tqdm, trange
-from sklearn.metrics import classification_report, f1_score
-from torch.utils.data import DataLoader
-
 from pytorch_pretrained_bert.modeling import (
     CONFIG_NAME,
     WEIGHTS_NAME,
@@ -36,7 +25,13 @@ from pytorch_pretrained_bert.modeling import (
 )
 from pytorch_pretrained_bert.optimization import BertAdam  # , warmup_linear
 from pytorch_pretrained_bert.tokenization import BertTokenizer
+
+# from tqdm import tqdm, trange
+from sklearn.metrics import classification_report, f1_score
+from torch.utils.data import DataLoader
+
 from utils import *
+from vgcn_bert.models.vanilla_vgcn_bert import Vanilla_VGCN_Bert
 
 random.seed(44)
 np.random.seed(44)
@@ -56,16 +51,14 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--ds", type=str, default="mr")
 parser.add_argument("--load", type=int, default=0)
 parser.add_argument("--sw", type=int, default="0")
-parser.add_argument("--dim", type=int, default="16")
 parser.add_argument("--lr", type=float, default=1e-5)
 parser.add_argument("--l2", type=float, default=0.01)
-parser.add_argument("--model", type=str, default="VGCN_BERT")
+parser.add_argument("--model", type=str, default="Vanilla_VGCN_BERT")
 args = parser.parse_args()
 cfg_ds = args.ds
 cfg_model_type = args.model
 cfg_stop_words = True if args.sw == 1 else False
 will_train_mode_from_checkpoint = True if args.load == 1 else False
-gcn_embedding_dim = args.dim
 learning_rate0 = args.lr
 l2_decay = args.l2
 
@@ -82,9 +75,10 @@ if cfg_ds == "sst":
 elif cfg_ds == "cola":
     batch_size = 16  # 12
     learning_rate0 = 8e-6  # 2e-5
-    l2_decay = 0.001
+    l2_decay = 0.01
 
-MAX_SEQ_LENGTH = 200 + gcn_embedding_dim
+MAX_SEQ_LENGTH = 200
+gcn_embedding_dim = 1
 gradient_accumulation_steps = 1
 bert_model_scale = "bert-base-uncased"
 do_lower_case = True
@@ -124,19 +118,30 @@ model_file_save = (
 print(cfg_model_type + " Start at:", time.asctime())
 print(
     "\n----- Configure -----",
-    f"\n  cfg_ds: {cfg_ds}",
-    f"\n  stop_words: {cfg_stop_words}",
-    # '\n  Vocab GCN_hidden_dim: 768 -> 1152 -> 768',
-    f"\n  Vocab GCN_hidden_dim: vocab_size -> 128 -> {str(gcn_embedding_dim)}",
-    f"\n  Learning_rate0: {learning_rate0}  weight_decay: {l2_decay}",
-    f"\n  Loss_criterion {cfg_loss_criterion}",
-    f"softmax_before_mse {do_softmax_before_mse}",
-    f"\n  Dropout: {dropout_rate} Run_adj: {cfg_vocab_adj} gcn_act_func: Relu",
-    f"\n  MAX_SEQ_LENGTH: {MAX_SEQ_LENGTH}", #'valid_data_taux',valid_data_taux
-    f"\n  perform_metrics_str: {perform_metrics_str}",
-    f"\n  model_file_save: {model_file_save}",
+    "\n  cfg_ds:",
+    cfg_ds,
+    "\n  stop_words:",
+    cfg_stop_words,
+    "\n  Learning_rate0:",
+    learning_rate0,
+    "weight_decay:",
+    l2_decay,
+    "\n  Loss_criterion",
+    cfg_loss_criterion,
+    "softmax_before_mse",
+    do_softmax_before_mse,
+    "\n  Dropout:",
+    dropout_rate,
+    "Run_adj:",
+    cfg_vocab_adj,
+    "gcn_act_func: Relu",
+    "\n  MAX_SEQ_LENGTH:",
+    MAX_SEQ_LENGTH,  #'valid_data_taux',valid_data_taux,
+    "\n  perform_metrics_str:",
+    perform_metrics_str,
+    "\n  model_file_save:",
+    model_file_save,
 )
-
 
 
 """
@@ -145,7 +150,9 @@ Load vocabulary adjacent matrix
 """
 print("\n----- Prepare data set -----")
 print(
-    f"  Load/shuffle/seperate {cfg_ds} dataset, and vocabulary graph adjacent matrix"
+    "  Load/shuffle/seperate",
+    cfg_ds,
+    "dataset, and vocabulary graph adjacent matrix",
 )
 
 objects = []
@@ -199,10 +206,14 @@ test_size = len(test_y)
 
 indexs = np.arange(0, len(examples))
 train_examples = [examples[i] for i in indexs[:train_size]]
-valid_examples = [examples[i] for i in indexs[train_size : train_size + valid_size]]
+valid_examples = [
+    examples[i] for i in indexs[train_size : train_size + valid_size]
+]
 test_examples = [
     examples[i]
-    for i in indexs[train_size + valid_size : train_size + valid_size + test_size]
+    for i in indexs[
+        train_size + valid_size : train_size + valid_size + test_size
+    ]
 ]
 
 if cfg_adj_tf_threshold > 0:
@@ -239,9 +250,9 @@ train_classes_num, train_classes_weight = get_class_count_and_weight(
 )
 loss_weight = torch.tensor(train_classes_weight).to(device)
 
-tokenizer = BertTokenizer.from_pretrained(bert_model_scale, do_lower_case=do_lower_case)
-
-
+tokenizer = BertTokenizer.from_pretrained(
+    bert_model_scale, do_lower_case=do_lower_case
+)
 
 
 def get_pytorch_dataloader(
@@ -312,40 +323,19 @@ total_train_steps = int(
 
 print("  Train_classes count:", train_classes_num)
 print(
-    f"  Num examples for train = {len(train_examples)}",
-    f", after weight sample: {len(train_dataloader) * batch_size}",
+    "  Num examples for train =",
+    len(train_examples),
+    ", after weight sample:",
+    len(train_dataloader) * batch_size,
 )
 print("  Num examples for validate = %d" % len(valid_examples))
 print("  Batch size = %d" % batch_size)
 print("  Num steps = %d" % total_train_steps)
 
 
-
 """
-Train vgcn_bert model
+Train vanilla_vgcn_bert model
 """
-
-
-def predict(model, examples, tokenizer, batch_size):
-    dataloader = get_pytorch_dataloader(
-        examples, tokenizer, batch_size, shuffle_choice=0
-    )
-    predict_out = []
-    confidence_out = []
-    model.eval()
-    with torch.no_grad():
-        for i, batch in enumerate(dataloader):
-            batch = tuple(t.to(device) for t in batch)
-            input_ids, input_mask, segment_ids, _, label_ids, gcn_swop_eye = batch
-            score_out = model(
-                gcn_adj_list, gcn_swop_eye, input_ids, segment_ids, input_mask
-            )
-            if cfg_loss_criterion == "mse" and do_softmax_before_mse:
-                score_out = torch.nn.functional.softmax(score_out, dim=-1)
-            predict_out.extend(score_out.max(1)[1].tolist())
-            confidence_out.extend(score_out.max(1)[0].tolist())
-
-    return np.array(predict_out).reshape(-1), np.array(confidence_out).reshape(-1)
 
 
 def evaluate(
@@ -362,7 +352,14 @@ def evaluate(
     with torch.no_grad():
         for batch in predict_dataloader:
             batch = tuple(t.to(device) for t in batch)
-            input_ids, input_mask, segment_ids, y_prob, label_ids, gcn_swop_eye = batch
+            (
+                input_ids,
+                input_mask,
+                segment_ids,
+                y_prob,
+                label_ids,
+                gcn_swop_eye,
+            ) = batch
             # the parameter label_ids is None, model return the prediction score
             logits = model(
                 gcn_adj_list, gcn_swop_eye, input_ids, segment_ids, input_mask
@@ -374,9 +371,13 @@ def evaluate(
                 loss = F.mse_loss(logits, y_prob)
             else:
                 if loss_weight is None:
-                    loss = F.cross_entropy(logits.view(-1, num_classes), label_ids)
+                    loss = F.cross_entropy(
+                        logits.view(-1, num_classes), label_ids
+                    )
                 else:
-                    loss = F.cross_entropy(logits.view(-1, num_classes), label_ids)
+                    loss = F.cross_entropy(
+                        logits.view(-1, num_classes), label_ids
+                    )
             ev_loss += loss.item()
 
             _, predicted = torch.max(logits, -1)
@@ -417,9 +418,6 @@ def evaluate(
     return ev_loss, ev_acc, f1_metrics
 
 
-
-from model_vgcn_bert import VGCN_Bert
-
 print("\n----- Running training -----")
 if will_train_mode_from_checkpoint and os.path.exists(
     os.path.join(output_dir, model_file_save)
@@ -433,9 +431,10 @@ if will_train_mode_from_checkpoint and os.path.exists(
     else:
         prev_save_step = -1
         start_epoch = checkpoint["epoch"] + 1
+    start_epoch = checkpoint["epoch"] + 1
     valid_acc_prev = checkpoint["valid_acc"]
     perform_metrics_prev = checkpoint["perform_metrics"]
-    model = VGCN_Bert.from_pretrained(
+    model = Vanilla_VGCN_Bert.from_pretrained(
         bert_model_scale,
         state_dict=checkpoint["model_state"],
         gcn_adj_dim=gcn_vocab_size,
@@ -443,26 +442,22 @@ if will_train_mode_from_checkpoint and os.path.exists(
         gcn_embedding_dim=gcn_embedding_dim,
         num_labels=len(label2idx),
     )
-    pretrained_dict = checkpoint["model_state"]
-    net_state_dict = model.state_dict()
-    pretrained_dict_selected = {
-        k: v for k, v in pretrained_dict.items() if k in net_state_dict
-    }
-    net_state_dict.update(pretrained_dict_selected)
-    model.load_state_dict(net_state_dict)
     print(
-        f"Loaded the pretrain model: {model_file_save}",
-        f", epoch: {checkpoint['epoch']}",
-        f"step: {prev_save_step}",
-        f"valid acc: {checkpoint['valid_acc']}",
-        f"{' '.join(perform_metrics_str)}_valid: {checkpoint['perform_metrics']}",
+        "Loaded the pretrain model:",
+        model_file_save,
+        ", epoch:",
+        checkpoint["epoch"],
+        "valid acc:",
+        checkpoint["valid_acc"],
+        " ".join(perform_metrics_str) + "_valid:",
+        checkpoint["perform_metrics"],
     )
 
 else:
     start_epoch = 0
     valid_acc_prev = 0
     perform_metrics_prev = 0
-    model = VGCN_Bert.from_pretrained(
+    model = Vanilla_VGCN_Bert.from_pretrained(
         bert_model_scale,
         gcn_adj_dim=gcn_vocab_size,
         gcn_adj_num=len(gcn_adj_list),
@@ -483,7 +478,10 @@ optimizer = BertAdam(
 
 train_start = time.time()
 global_step_th = int(
-    len(train_examples) / batch_size / gradient_accumulation_steps * start_epoch
+    len(train_examples)
+    / batch_size
+    / gradient_accumulation_steps
+    * start_epoch
 )
 
 all_loss_list = {"train": [], "valid": [], "test": []}
@@ -501,9 +499,18 @@ for epoch in range(start_epoch, total_train_epochs):
         if prev_save_step > -1:
             prev_save_step = -1
         batch = tuple(t.to(device) for t in batch)
-        input_ids, input_mask, segment_ids, y_prob, label_ids, gcn_swop_eye = batch
+        (
+            input_ids,
+            input_mask,
+            segment_ids,
+            y_prob,
+            label_ids,
+            gcn_swop_eye,
+        ) = batch
 
-        logits = model(gcn_adj_list, gcn_swop_eye, input_ids, segment_ids, input_mask)
+        logits = model(
+            gcn_adj_list, gcn_swop_eye, input_ids, segment_ids, input_mask
+        )
 
         if cfg_loss_criterion == "mse":
             if do_softmax_before_mse:
@@ -514,7 +521,9 @@ for epoch in range(start_epoch, total_train_epochs):
                 loss = F.cross_entropy(logits, label_ids)
             else:
                 loss = F.cross_entropy(
-                    logits.view(-1, num_classes), label_ids, loss_weight
+                    logits.view(-1, num_classes),
+                    label_ids,
+                    loss_weight.float(),
                 )
 
         if gradient_accumulation_steps > 1:
@@ -572,9 +581,15 @@ for epoch in range(start_epoch, total_train_epochs):
         # train_f1_when_valid_best=tr_f1
         valid_f1_best_epoch = epoch
 
-print("\n**Optimization Finished!,Total spend:", (time.time() - train_start) / 60.0)
+print(
+    "\n**Optimization Finished!,Total spend:",
+    (time.time() - train_start) / 60.0,
+)
 print(
     "**Valid weighted F1: %.3f at %d epoch."
     % (100 * perform_metrics_prev, valid_f1_best_epoch)
 )
-print("**Test weighted F1 when valid best: %.3f" % (100 * test_f1_when_valid_best))
+print(
+    "**Test weighted F1 when valid best: %.3f"
+    % (100 * test_f1_when_valid_best)
+)

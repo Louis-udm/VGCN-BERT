@@ -23,7 +23,6 @@ import re
 import numpy as np
 import tensorflow as tf
 import torch
-
 from pytorch_pretrained_bert.modeling import (
     BertConfig,
     BertForPreTraining,

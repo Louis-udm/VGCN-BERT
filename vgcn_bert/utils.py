@@ -1,14 +1,7 @@
 # -*- coding: utf-8 -*-
 
-# # # #
-# utils.py
 # @author Zhibin.LU
-# @created 2019-12-24T10:51:59.943Z-05:00
-# @last-modified 2020-01-02T03:47:54.026Z-05:00
-# @website: https://louis-udm.github.io
-# @description
-# # # #
-
+# @website: https://github.com/Louis-udm
 
 import numpy as np
 import scipy.sparse as sp
@@ -31,7 +24,9 @@ General functions
 
 
 def clean_tweet_tokenize(string):
-    tknzr = TweetTokenizer(reduce_len=True, preserve_case=False, strip_handles=False)
+    tknzr = TweetTokenizer(
+        reduce_len=True, preserve_case=False, strip_handles=False
+    )
     tokens = tknzr.tokenize(string.lower())
     return " ".join(tokens).strip()
 
@@ -143,7 +138,9 @@ def _truncate_seq_pair(tokens_a, tokens_b, max_length):
             tokens_b.pop()
 
 
-def example2feature(example, tokenizer, gcn_vocab_map, max_seq_len, gcn_embedding_dim):
+def example2feature(
+    example, tokenizer, gcn_vocab_map, max_seq_len, gcn_embedding_dim
+):
 
     # tokens_a = tokenizer.tokenize(example.text_a)
     # do not need use bert.tokenizer again, because be used at prepare_data.py
@@ -151,14 +148,19 @@ def example2feature(example, tokenizer, gcn_vocab_map, max_seq_len, gcn_embeddin
     assert example.text_b == None
     # Account for [CLS] and [SEP] with "- 2" ,# -1 for gcn_words_convoled
     if len(tokens_a) > max_seq_len - 1 - gcn_embedding_dim:
-        print("GUID: %d, Sentence is too long: %d" % (example.guid, len(tokens_a)))
+        print(
+            "GUID: %d, Sentence is too long: %d"
+            % (example.guid, len(tokens_a))
+        )
         tokens_a = tokens_a[: (max_seq_len - 1 - gcn_embedding_dim)]
 
     gcn_vocab_ids = []
     for w in tokens_a:
         gcn_vocab_ids.append(gcn_vocab_map[w])
 
-    tokens = ["[CLS]"] + tokens_a + ["[SEP]" for i in range(gcn_embedding_dim + 1)]
+    tokens = (
+        ["[CLS]"] + tokens_a + ["[SEP]" for i in range(gcn_embedding_dim + 1)]
+    )
     segment_ids = [0] * len(tokens)
 
     input_ids = tokenizer.convert_tokens_to_ids(tokens)
@@ -183,7 +185,12 @@ def example2feature(example, tokenizer, gcn_vocab_map, max_seq_len, gcn_embeddin
 
 class CorpusDataset(Dataset):
     def __init__(
-        self, examples, tokenizer, gcn_vocab_map, max_seq_len, gcn_embedding_dim
+        self,
+        examples,
+        tokenizer,
+        gcn_vocab_map,
+        max_seq_len,
+        gcn_embedding_dim,
     ):
         self.examples = examples
         self.tokenizer = tokenizer
@@ -225,7 +232,8 @@ class CorpusDataset(Dataset):
         # filliing with -1, for indicate the position of this pad is not in gcn_vocab_list. then for generate the transform order tensor and delete this column.
         # first -1 correspond[CLS]
         f_pad2 = lambda x, seqlen: [
-            [-1] + sample[x] + [-1] * (seqlen - len(sample[x]) - 1) for sample in batch
+            [-1] + sample[x] + [-1] * (seqlen - len(sample[x]) - 1)
+            for sample in batch
         ]
 
         batch_input_ids = torch.tensor(f_pad(0, maxlen), dtype=torch.long)
@@ -235,9 +243,9 @@ class CorpusDataset(Dataset):
         batch_label_ids = torch.tensor(f_collect(4), dtype=torch.long)
         batch_gcn_vocab_ids_paded = np.array(f_pad2(5, maxlen)).reshape(-1)
         # generate eye matrix according to gcn_vocab_size+1, the 1 is for f_pad2 filling -1, then change to the row with all 0 value.
-        batch_gcn_swop_eye = torch.eye(gcn_vocab_size + 1)[batch_gcn_vocab_ids_paded][
-            :, :-1
-        ]
+        batch_gcn_swop_eye = torch.eye(gcn_vocab_size + 1)[
+            batch_gcn_vocab_ids_paded
+        ][:, :-1]
         # This tensor is for transform batch_embedding_tensor to gcn_vocab order
         # -1 is seq_len. usage: batch_gcn_swop_eye.matmul(batch_seq_embedding)
         batch_gcn_swop_eye = batch_gcn_swop_eye.view(

@@ -20,7 +20,6 @@ import argparse
 from io import open
 
 import torch
-
 from pytorch_pretrained_bert.modeling_openai import (
     CONFIG_NAME,
     WEIGHTS_NAME,

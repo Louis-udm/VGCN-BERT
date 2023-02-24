@@ -3,7 +3,12 @@ Utilities for working with the local dataset cache.
 This file is adapted from the AllenNLP library at https://github.com/allenai/allennlp
 Copyright by the AllenNLP authors.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import (
+    absolute_import,
+    division,
+    print_function,
+    unicode_literals,
+)
 
 import fnmatch
 import json
@@ -28,7 +33,8 @@ try:
 except ImportError:
     torch_cache_home = os.path.expanduser(
         os.getenv(
-            "TORCH_HOME", os.path.join(os.getenv("XDG_CACHE_HOME", "~/.cache"), "torch")
+            "TORCH_HOME",
+            os.path.join(os.getenv("XDG_CACHE_HOME", "~/.cache"), "torch"),
         )
     )
 default_cache_path = os.path.join(torch_cache_home, "pytorch_pretrained_bert")
@@ -127,7 +133,9 @@ def cached_path(url_or_filename, cache_dir=None):
     else:
         # Something unknown
         raise ValueError(
-            "unable to parse {} as a URL or as a local path".format(url_or_filename)
+            "unable to parse {} as a URL or as a local path".format(
+                url_or_filename
+            )
         )
 
 
@@ -229,7 +237,9 @@ def get_from_cache(url, cache_dir=None):
     # try to get the last downloaded one
     if not os.path.exists(cache_path) and etag is None:
         matching_files = fnmatch.filter(os.listdir(cache_dir), filename + ".*")
-        matching_files = list(filter(lambda s: not s.endswith(".json"), matching_files))
+        matching_files = list(
+            filter(lambda s: not s.endswith(".json"), matching_files)
+        )
         if matching_files:
             cache_path = os.path.join(cache_dir, matching_files[-1])
 
@@ -237,7 +247,9 @@ def get_from_cache(url, cache_dir=None):
         # Download to temporary file, then copy to cache dir once finished.
         # Otherwise you get corrupt cache entries if the download gets interrupted.
         with tempfile.NamedTemporaryFile() as temp_file:
-            logger.info("%s not found in cache, downloading to %s", url, temp_file.name)
+            logger.info(
+                "%s not found in cache, downloading to %s", url, temp_file.name
+            )
 
             # GET file object
             if url.startswith("s3://"):
@@ -250,7 +262,9 @@ def get_from_cache(url, cache_dir=None):
             # shutil.copyfileobj() starts at the current position, so go to the start
             temp_file.seek(0)
 
-            logger.info("copying %s to cache at %s", temp_file.name, cache_path)
+            logger.info(
+                "copying %s to cache at %s", temp_file.name, cache_path
+            )
             with open(cache_path, "wb") as cache_file:
                 shutil.copyfileobj(temp_file, cache_file)
 
