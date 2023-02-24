@@ -47,7 +47,7 @@ if cuda_yes:
     torch.cuda.manual_seed_all(44)
 device = torch.device("cuda:0" if cuda_yes else "cpu")
 
-#%%
+
 """
 Configuration
 """
@@ -152,7 +152,7 @@ print(
 )
 
 
-#%%
+
 """
 Prepare data set
 Load vocabulary adjacent matrix
@@ -255,7 +255,7 @@ loss_weight = torch.tensor(train_classes_weight).to(device)
 
 tokenizer = BertTokenizer.from_pretrained(bert_model_scale, do_lower_case=do_lower_case)
 
-#%%
+
 
 
 def get_pytorch_dataloader(
@@ -336,7 +336,7 @@ print("  Batch size = %d" % batch_size)
 print("  Num steps = %d" % total_train_steps)
 
 
-#%%
+
 """
 Train vgcn_bert model
 """
@@ -433,7 +433,7 @@ def evaluate(
     return ev_loss, ev_acc, f1_metrics
 
 
-#%%
+
 from model_vgcn_bert import VGCN_Bert
 
 print("\n----- Running training -----")

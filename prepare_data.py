@@ -13,7 +13,7 @@ import argparse
 import os
 import pickle as pkl
 
-#%%
+
 import random
 import re
 import sys
@@ -35,7 +35,7 @@ np.random.seed(44)
 # if cuda_yes:
 #     torch.cuda.manual_seed_all(44)
 
-#%%
+
 """
 Config:
 """
@@ -105,7 +105,7 @@ print(
 )
 print("\n")
 
-#%%
+
 """
 Get the tweets,y,confidence etc from data file
 """
@@ -129,7 +129,7 @@ def del_http_user_tokenize(tweet):
     return tweet
 
 
-#%%
+
 if cfg_ds == "sst":
     from get_sst_data import DataReader
 
@@ -187,7 +187,7 @@ elif cfg_ds == "cola":
     y_prob = np.eye(len(y), len(label2idx))[y]
     corpus_size = len(y)
 
-#%%
+
 doc_content_list = []
 for t in corpus:
     doc_content_list.append(del_http_user_tokenize(t))
@@ -217,7 +217,7 @@ print(
 )
 
 
-#%%
+
 """
 Remove stop words from tweets
 """
@@ -313,7 +313,7 @@ for i, doc_content in enumerate(doc_content_list):
 print("Total", count_void_doc, " docs are empty.")
 
 
-#%%
+
 
 min_len = 10000
 min_len_id = -1
@@ -338,7 +338,7 @@ print("Max_len : " + str(max_len) + " id: " + str(max_len_id))
 print("Average_len : " + str(aver_len))
 
 
-#%%
+
 """
 Build graph
 """
@@ -356,7 +356,7 @@ if cfg_ds in ("mr", "sst", "cola"):
     valid_y_prob = y_prob[train_size : train_size + valid_size]
     test_y_prob = y_prob[train_size + valid_size :]
 
-#%%
+
 
 # build vocab using whole corpus(train+valid+test+genelization)
 word_set = set()
@@ -386,7 +386,7 @@ for doc_words in train_valid_docs:
 vocab_train_valid = list(word_set_train_valid)
 vocab_train_valid_size = len(vocab_train_valid)
 
-#%%
+
 # a map for word -> doc_list
 if tfidf_mode == "all_tf_train_valid_idf":
     for_idf_docs = train_valid_docs
@@ -412,7 +412,7 @@ word_doc_freq = {}
 for word, doc_list in word_doc_list.items():
     word_doc_freq[word] = len(doc_list)
 
-#%%
+
 """
 Doc word heterogeneous graph
 and Vocabulary graph
@@ -486,7 +486,7 @@ for window in windows:
             appeared.add(word_pair_str)
 
 
-#%%
+
 from math import log
 
 row = []
@@ -541,7 +541,7 @@ print("max_pmi:", tmp_max_pmi, "min_pmi:", tmp_min_pmi)
 print("max_npmi:", tmp_max_npmi, "min_npmi:", tmp_min_npmi)
 
 
-#%%
+
 print("Calculate doc-word tf-idf weight")
 
 n_docs = len(shuffled_clean_docs)
@@ -587,7 +587,7 @@ for i in range(n_docs):
         weight.extend(tfidf_vec)
         tfidf_weight.extend(tfidf_vec)
 
-#%%
+
 """
 Assemble adjacency matrix and dump to files
 """
@@ -608,7 +608,7 @@ vocab_adj = sp.csr_matrix(
 )
 vocab_adj.setdiag(1.0)
 
-#%%
+
 print("Calculate isomorphic vocab adjacency matrix using doc's tf-idf...")
 tfidf_all = sp.csr_matrix(
     (tfidf_weight, (tfidf_row, tfidf_col)),
