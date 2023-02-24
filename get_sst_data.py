@@ -1,10 +1,11 @@
-class DataReader():
+class DataReader:
     """
     Get dataset from files
 
     Examples:
         train, dev, test = DataReader("data/train.txt","data/dev.txt","data/test.txt").read()
     """
+
     def __init__(self, train_file, dev_file, test_file):
         """
         Init dataset information.
@@ -39,7 +40,7 @@ class DataReader():
         """
         with open(input_file) as reader:
             raw_data = reader.readlines()
-        
+
         return raw_data
 
     def formate(self, raw_data):
@@ -63,17 +64,17 @@ class DataReader():
             num_idx = 0
             while raw[num_idx] not in "0123456789":
                 num_idx += 1
-            
-            label = int(raw[ : num_idx + 1])
+
+            label = int(raw[: num_idx + 1])
 
             str_idx = num_idx + 1
-            if raw[str_idx] == ' ':
+            if raw[str_idx] == " ":
                 str_idx += 1
 
             if raw[-1] == "\n":
-                string = raw[str_idx : -1]
+                string = raw[str_idx:-1]
             else:
-                string = raw[str_idx : ]
+                string = raw[str_idx:]
 
             string.lower()
 

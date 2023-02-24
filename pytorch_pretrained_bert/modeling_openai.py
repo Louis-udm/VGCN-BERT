@@ -31,26 +31,44 @@ import torch.nn as nn
 from torch.nn import CrossEntropyLoss
 from torch.nn.parameter import Parameter
 
-from .file_utils import cached_path, CONFIG_NAME, WEIGHTS_NAME
+from .file_utils import CONFIG_NAME, WEIGHTS_NAME, cached_path
 from .modeling import BertLayerNorm as LayerNorm
 from .modeling_gpt2 import prune_conv1d_layer
 
 logger = logging.getLogger(__name__)
 
-PRETRAINED_MODEL_ARCHIVE_MAP = {"openai-gpt": "https://s3.amazonaws.com/models.huggingface.co/bert/openai-gpt-pytorch_model.bin"}
-PRETRAINED_CONFIG_ARCHIVE_MAP = {"openai-gpt": "https://s3.amazonaws.com/models.huggingface.co/bert/openai-gpt-config.json"}
+PRETRAINED_MODEL_ARCHIVE_MAP = {
+    "openai-gpt": "https://s3.amazonaws.com/models.huggingface.co/bert/openai-gpt-pytorch_model.bin"
+}
+PRETRAINED_CONFIG_ARCHIVE_MAP = {
+    "openai-gpt": "https://s3.amazonaws.com/models.huggingface.co/bert/openai-gpt-config.json"
+}
 
 
 def load_tf_weights_in_openai_gpt(model, openai_checkpoint_folder_path):
-    """ Load tf pre-trained weights in a pytorch model (from NumPy arrays here)
-    """
+    """Load tf pre-trained weights in a pytorch model (from NumPy arrays here)"""
     import re
+
     import numpy as np
+
     print("Loading weights...")
-    names = json.load(open(openai_checkpoint_folder_path + '/parameters_names.json', "r", encoding='utf-8'))
-    shapes = json.load(open(openai_checkpoint_folder_path + '/params_shapes.json', "r", encoding='utf-8'))
+    names = json.load(
+        open(
+            openai_checkpoint_folder_path + "/parameters_names.json",
+            "r",
+            encoding="utf-8",
+        )
+    )
+    shapes = json.load(
+        open(
+            openai_checkpoint_folder_path + "/params_shapes.json", "r", encoding="utf-8"
+        )
+    )
     offsets = np.cumsum([np.prod(shape) for shape in shapes])
-    init_params = [np.load(openai_checkpoint_folder_path + '/params_{}.npy'.format(n)) for n in range(10)]
+    init_params = [
+        np.load(openai_checkpoint_folder_path + "/params_{}.npy".format(n))
+        for n in range(10)
+    ]
     init_params = np.split(np.concatenate(init_params, 0), offsets)[:-1]
     init_params = [param.reshape(shape) for param, shape in zip(init_params, shapes)]
 
@@ -74,23 +92,25 @@ def load_tf_weights_in_openai_gpt(model, openai_checkpoint_folder_path):
     init_params.pop(0)
     init_params.pop(0)
 
-    for name, array in zip(names, init_params): # names[1:n_transfer], init_params[1:n_transfer]):
+    for name, array in zip(
+        names, init_params
+    ):  # names[1:n_transfer], init_params[1:n_transfer]):
         name = name[6:]  # skip "model/"
         assert name[-2:] == ":0"
         name = name[:-2]
-        name = name.split('/')
+        name = name.split("/")
         pointer = model
         for m_name in name:
-            if re.fullmatch(r'[A-Za-z]+\d+', m_name):
-                l = re.split(r'(\d+)', m_name)
+            if re.fullmatch(r"[A-Za-z]+\d+", m_name):
+                l = re.split(r"(\d+)", m_name)
             else:
                 l = [m_name]
-            if l[0] == 'g':
-                pointer = getattr(pointer, 'weight')
-            elif l[0] == 'b':
-                pointer = getattr(pointer, 'bias')
-            elif l[0] == 'w':
-                pointer = getattr(pointer, 'weight')
+            if l[0] == "g":
+                pointer = getattr(pointer, "weight")
+            elif l[0] == "b":
+                pointer = getattr(pointer, "bias")
+            elif l[0] == "w":
+                pointer = getattr(pointer, "weight")
             else:
                 pointer = getattr(pointer, l[0])
             if len(l) >= 2:
@@ -112,7 +132,11 @@ def load_tf_weights_in_openai_gpt(model, openai_checkpoint_folder_path):
 
 
 def gelu(x):
-    return 0.5 * x * (1 + torch.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * torch.pow(x, 3))))
+    return (
+        0.5
+        * x
+        * (1 + torch.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * torch.pow(x, 3))))
+    )
 
 
 def swish(x):
@@ -123,8 +147,7 @@ ACT_FNS = {"relu": nn.ReLU, "swish": swish, "gelu": gelu}
 
 
 class OpenAIGPTConfig(object):
-    """Configuration class to store the configuration of a `OpenAIGPTModel`.
-    """
+    """Configuration class to store the configuration of a `OpenAIGPTModel`."""
 
     def __init__(
         self,
@@ -141,7 +164,7 @@ class OpenAIGPTConfig(object):
         attn_pdrop=0.1,
         layer_norm_epsilon=1e-5,
         initializer_range=0.02,
-        predict_special_tokens=True
+        predict_special_tokens=True,
     ):
         """Constructs OpenAIGPTConfig.
 
@@ -166,8 +189,10 @@ class OpenAIGPTConfig(object):
                 initializing all weight matrices.
             predict_special_tokens: should we predict special tokens (when the model has a LM head)
         """
-        if isinstance(vocab_size_or_config_json_file, str) or (sys.version_info[0] == 2
-                        and isinstance(vocab_size_or_config_json_file, unicode)):
+        if isinstance(vocab_size_or_config_json_file, str) or (
+            sys.version_info[0] == 2
+            and isinstance(vocab_size_or_config_json_file, unicode)
+        ):
             with open(vocab_size_or_config_json_file, "r", encoding="utf-8") as reader:
                 json_config = json.loads(reader.read())
             for key, value in json_config.items():
@@ -225,8 +250,8 @@ class OpenAIGPTConfig(object):
         return json.dumps(self.to_dict(), indent=2, sort_keys=True) + "\n"
 
     def to_json_file(self, json_file_path):
-        """ Save this instance to a json file."""
-        with open(json_file_path, "w", encoding='utf-8') as writer:
+        """Save this instance to a json file."""
+        with open(json_file_path, "w", encoding="utf-8") as writer:
             writer.write(self.to_json_string())
 
 
@@ -254,12 +279,22 @@ class Conv1D(nn.Module):
 
 
 class Attention(nn.Module):
-    def __init__(self, nx, n_ctx, config, scale=False, output_attentions=False, keep_multihead_output=False):
+    def __init__(
+        self,
+        nx,
+        n_ctx,
+        config,
+        scale=False,
+        output_attentions=False,
+        keep_multihead_output=False,
+    ):
         super(Attention, self).__init__()
         n_state = nx  # in Attention: n_state=768 (nx=n_embd)
         # [switch nx => n_state from Block to Attention to keep identical to TF implem]
         assert n_state % config.n_head == 0
-        self.register_buffer("bias", torch.tril(torch.ones(n_ctx, n_ctx)).view(1, 1, n_ctx, n_ctx))
+        self.register_buffer(
+            "bias", torch.tril(torch.ones(n_ctx, n_ctx)).view(1, 1, n_ctx, n_ctx)
+        )
         self.n_head = config.n_head
         self.split_size = n_state
         self.scale = scale
@@ -281,7 +316,9 @@ class Attention(nn.Module):
             mask[head] = 0
         mask = mask.view(-1).contiguous().eq(1)
         index = torch.arange(len(mask))[mask].long()
-        index_attn = torch.cat([index, index + self.split_size, index + (2*self.split_size)])
+        index_attn = torch.cat(
+            [index, index + self.split_size, index + (2 * self.split_size)]
+        )
         # Prune conv1d layers
         self.c_attn = prune_conv1d_layer(self.c_attn, index_attn, dim=1)
         self.c_proj = prune_conv1d_layer(self.c_proj, index, dim=0)
@@ -360,11 +397,20 @@ class MLP(nn.Module):
 
 
 class Block(nn.Module):
-    def __init__(self, n_ctx, config, scale=False, output_attentions=False, keep_multihead_output=False):
+    def __init__(
+        self,
+        n_ctx,
+        config,
+        scale=False,
+        output_attentions=False,
+        keep_multihead_output=False,
+    ):
         super(Block, self).__init__()
         nx = config.n_embd
         self.output_attentions = output_attentions
-        self.attn = Attention(nx, n_ctx, config, scale, output_attentions, keep_multihead_output)
+        self.attn = Attention(
+            nx, n_ctx, config, scale, output_attentions, keep_multihead_output
+        )
         self.ln_1 = LayerNorm(nx, eps=config.layer_norm_epsilon)
         self.mlp = MLP(4 * nx, config)
         self.ln_2 = LayerNorm(nx, eps=config.layer_norm_epsilon)
@@ -382,7 +428,7 @@ class Block(nn.Module):
 
 
 class OpenAIGPTLMHead(nn.Module):
-    """ Language Model Head for the transformer """
+    """Language Model Head for the transformer"""
 
     def __init__(self, model_embeddings_weights, config):
         super(OpenAIGPTLMHead, self).__init__()
@@ -393,7 +439,9 @@ class OpenAIGPTLMHead(nn.Module):
         self.decoder = nn.Linear(embed_shape[1], embed_shape[0], bias=False)
         self.set_embeddings_weights(model_embeddings_weights)
 
-    def set_embeddings_weights(self, model_embeddings_weights, predict_special_tokens=True):
+    def set_embeddings_weights(
+        self, model_embeddings_weights, predict_special_tokens=True
+    ):
         self.predict_special_tokens = predict_special_tokens
         embed_shape = model_embeddings_weights.shape
         self.decoder.weight = model_embeddings_weights  # Tied weights
@@ -401,17 +449,19 @@ class OpenAIGPTLMHead(nn.Module):
     def forward(self, hidden_state):
         lm_logits = self.decoder(hidden_state)
         if not self.predict_special_tokens:
-            lm_logits = lm_logits[..., :self.vocab_size]
+            lm_logits = lm_logits[..., : self.vocab_size]
         return lm_logits
 
 
 class OpenAIGPTMultipleChoiceHead(nn.Module):
-    """ Classifier Head for the transformer """
+    """Classifier Head for the transformer"""
 
     def __init__(self, config):
         super(OpenAIGPTMultipleChoiceHead, self).__init__()
         self.n_embd = config.n_embd
-        self.dropout = nn.Dropout2d(config.resid_pdrop)  # To reproduce the noise_shape parameter of TF implementation
+        self.dropout = nn.Dropout2d(
+            config.resid_pdrop
+        )  # To reproduce the noise_shape parameter of TF implementation
         self.linear = nn.Linear(config.n_embd, 1)
 
         nn.init.normal_(self.linear.weight, std=0.02)
@@ -421,19 +471,25 @@ class OpenAIGPTMultipleChoiceHead(nn.Module):
         # Classification logits
         # hidden_state (bsz, num_choices, seq_length, hidden_size)
         # mc_token_ids (bsz, num_choices)
-        mc_token_ids = mc_token_ids.unsqueeze(-1).unsqueeze(-1).expand(-1, -1, -1, hidden_states.size(-1))
+        mc_token_ids = (
+            mc_token_ids.unsqueeze(-1)
+            .unsqueeze(-1)
+            .expand(-1, -1, -1, hidden_states.size(-1))
+        )
         # (bsz, num_choices, 1, hidden_size)
         multiple_choice_h = hidden_states.gather(2, mc_token_ids).squeeze(2)
         # (bsz, num_choices, hidden_size)
-        multiple_choice_h = self.dropout(multiple_choice_h.transpose(1, 2)).transpose(1, 2)
+        multiple_choice_h = self.dropout(multiple_choice_h.transpose(1, 2)).transpose(
+            1, 2
+        )
         multiple_choice_logits = self.linear(multiple_choice_h).squeeze(-1)
         # (bsz, num_choices)
         return multiple_choice_logits
 
 
 class OpenAIGPTPreTrainedModel(nn.Module):
-    """ An abstract class to handle weights initialization and
-        a simple interface for dowloading and loading pretrained models.
+    """An abstract class to handle weights initialization and
+    a simple interface for dowloading and loading pretrained models.
     """
 
     def __init__(self, config, *inputs, **kwargs):
@@ -449,8 +505,7 @@ class OpenAIGPTPreTrainedModel(nn.Module):
         self.config = config
 
     def init_weights(self, module):
-        """ Initialize the weights.
-        """
+        """Initialize the weights."""
         if isinstance(module, (nn.Linear, nn.Embedding)):
             # Slightly different from the TF version which uses truncated_normal for initialization
             # cf https://github.com/pytorch/pytorch/pull/5617
@@ -462,7 +517,9 @@ class OpenAIGPTPreTrainedModel(nn.Module):
             module.bias.data.zero_()
 
     @classmethod
-    def from_pretrained(cls, pretrained_model_name_or_path, num_special_tokens=None, *inputs, **kwargs):
+    def from_pretrained(
+        cls, pretrained_model_name_or_path, num_special_tokens=None, *inputs, **kwargs
+    ):
         """
         Instantiate a OpenAIGPTPreTrainedModel from a pre-trained model file or a pytorch state dict.
         Download and cache the pre-trained model file if needed.
@@ -482,12 +539,12 @@ class OpenAIGPTPreTrainedModel(nn.Module):
             state_dict: an optional state dictionnary (collections.OrderedDict object) to use instead of pre-trained models
             *inputs, **kwargs: additional input for the specific OpenAI-GPT class
         """
-        state_dict = kwargs.get('state_dict', None)
-        kwargs.pop('state_dict', None)
-        cache_dir = kwargs.get('cache_dir', None)
-        kwargs.pop('cache_dir', None)
-        from_tf = kwargs.get('from_tf', False)
-        kwargs.pop('from_tf', None)
+        state_dict = kwargs.get("state_dict", None)
+        kwargs.pop("state_dict", None)
+        cache_dir = kwargs.get("cache_dir", None)
+        kwargs.pop("cache_dir", None)
+        from_tf = kwargs.get("from_tf", False)
+        kwargs.pop("from_tf", None)
 
         if pretrained_model_name_or_path in PRETRAINED_MODEL_ARCHIVE_MAP:
             archive_file = PRETRAINED_MODEL_ARCHIVE_MAP[pretrained_model_name_or_path]
@@ -502,14 +559,18 @@ class OpenAIGPTPreTrainedModel(nn.Module):
             if pretrained_model_name_or_path in PRETRAINED_MODEL_ARCHIVE_MAP:
                 logger.error(
                     "Couldn't reach server at '{}' to download pretrained weights.".format(
-                        archive_file))
+                        archive_file
+                    )
+                )
             else:
                 logger.error(
                     "Model name '{}' was not found in model name list ({}). "
                     "We assumed '{}' was a path or url but couldn't find file {} "
                     "at this path or url.".format(
-                        pretrained_model_name_or_path, ", ".join(PRETRAINED_MODEL_ARCHIVE_MAP.keys()), pretrained_model_name_or_path,
-                        archive_file
+                        pretrained_model_name_or_path,
+                        ", ".join(PRETRAINED_MODEL_ARCHIVE_MAP.keys()),
+                        pretrained_model_name_or_path,
+                        archive_file,
                     )
                 )
             return None
@@ -519,32 +580,45 @@ class OpenAIGPTPreTrainedModel(nn.Module):
             if pretrained_model_name_or_path in PRETRAINED_CONFIG_ARCHIVE_MAP:
                 logger.error(
                     "Couldn't reach server at '{}' to download pretrained model configuration file.".format(
-                        config_file))
+                        config_file
+                    )
+                )
             else:
                 logger.error(
                     "Model name '{}' was not found in model name list ({}). "
                     "We assumed '{}' was a path or url but couldn't find file {} "
                     "at this path or url.".format(
-                        pretrained_model_name_or_path, ", ".join(PRETRAINED_CONFIG_ARCHIVE_MAP.keys()), pretrained_model_name_or_path,
-                        config_file
+                        pretrained_model_name_or_path,
+                        ", ".join(PRETRAINED_CONFIG_ARCHIVE_MAP.keys()),
+                        pretrained_model_name_or_path,
+                        config_file,
                     )
                 )
             return None
-        if resolved_archive_file == archive_file and resolved_config_file == config_file:
+        if (
+            resolved_archive_file == archive_file
+            and resolved_config_file == config_file
+        ):
             logger.info("loading weights file {}".format(archive_file))
             logger.info("loading configuration file {}".format(config_file))
         else:
-            logger.info("loading weights file {} from cache at {}".format(
-                archive_file, resolved_archive_file))
-            logger.info("loading configuration file {} from cache at {}".format(
-                config_file, resolved_config_file))
+            logger.info(
+                "loading weights file {} from cache at {}".format(
+                    archive_file, resolved_archive_file
+                )
+            )
+            logger.info(
+                "loading configuration file {} from cache at {}".format(
+                    config_file, resolved_config_file
+                )
+            )
         # Load config
         config = OpenAIGPTConfig.from_json_file(resolved_config_file)
         logger.info("Model config {}".format(config))
         # Instantiate model.
         model = cls(config, *inputs, **kwargs)
         if state_dict is None and not from_tf:
-            state_dict = torch.load(resolved_archive_file, map_location='cpu')
+            state_dict = torch.load(resolved_archive_file, map_location="cpu")
         if from_tf:
             # Directly load from a TensorFlow checkpoint (stored as NumPy array)
             return load_tf_weights_in_openai_gpt(model, resolved_archive_file)
@@ -577,33 +651,49 @@ class OpenAIGPTPreTrainedModel(nn.Module):
         def load(module, prefix=""):
             local_metadata = {} if metadata is None else metadata.get(prefix[:-1], {})
             module._load_from_state_dict(
-                state_dict, prefix, local_metadata, True, missing_keys, unexpected_keys, error_msgs
+                state_dict,
+                prefix,
+                local_metadata,
+                True,
+                missing_keys,
+                unexpected_keys,
+                error_msgs,
             )
             for name, child in module._modules.items():
                 if child is not None:
                     load(child, prefix + name + ".")
 
         start_model = model
-        if hasattr(model, "transformer") and all(not s.startswith('transformer.') for s in state_dict.keys()):
+        if hasattr(model, "transformer") and all(
+            not s.startswith("transformer.") for s in state_dict.keys()
+        ):
             start_model = model.transformer
         load(start_model, prefix="")
 
         if len(missing_keys) > 0:
             logger.info(
-                "Weights of {} not initialized from pretrained model: {}".format(model.__class__.__name__, missing_keys)
+                "Weights of {} not initialized from pretrained model: {}".format(
+                    model.__class__.__name__, missing_keys
+                )
             )
         if len(unexpected_keys) > 0:
             logger.info(
-                "Weights from pretrained model not used in {}: {}".format(model.__class__.__name__, unexpected_keys)
+                "Weights from pretrained model not used in {}: {}".format(
+                    model.__class__.__name__, unexpected_keys
+                )
             )
         if len(error_msgs) > 0:
             raise RuntimeError(
-                "Error(s) in loading state_dict for {}:\n\t{}".format(model.__class__.__name__, "\n\t".join(error_msgs))
+                "Error(s) in loading state_dict for {}:\n\t{}".format(
+                    model.__class__.__name__, "\n\t".join(error_msgs)
+                )
             )
 
         # Add additional embeddings for special tokens if needed
         # This step also make sure we are still sharing the output and input embeddings after loading weights
-        model.set_num_special_tokens(num_special_tokens if num_special_tokens is not None else config.n_special)
+        model.set_num_special_tokens(
+            num_special_tokens if num_special_tokens is not None else config.n_special
+        )
         return model
 
 
@@ -669,46 +759,59 @@ class OpenAIGPTModel(OpenAIGPTPreTrainedModel):
         self.tokens_embed = nn.Embedding(config.total_tokens_embeddings, config.n_embd)
         self.positions_embed = nn.Embedding(config.n_positions, config.n_embd)
         self.drop = nn.Dropout(config.embd_pdrop)
-        block = Block(config.n_ctx, config, scale=True, output_attentions=output_attentions,
-                                                        keep_multihead_output=keep_multihead_output)
+        block = Block(
+            config.n_ctx,
+            config,
+            scale=True,
+            output_attentions=output_attentions,
+            keep_multihead_output=keep_multihead_output,
+        )
         self.h = nn.ModuleList([copy.deepcopy(block) for _ in range(config.n_layer)])
 
         self.apply(self.init_weights)
 
     def set_num_special_tokens(self, num_special_tokens):
-        " Update input embeddings with new embedding matrice if needed "
+        "Update input embeddings with new embedding matrice if needed"
         if self.config.n_special == num_special_tokens:
             return
         # Update config
         self.config.n_special = num_special_tokens
         # Build new embeddings and initialize all new embeddings (in particular the special tokens)
         old_embed = self.tokens_embed
-        self.tokens_embed = nn.Embedding(self.config.total_tokens_embeddings, self.config.n_embd)
+        self.tokens_embed = nn.Embedding(
+            self.config.total_tokens_embeddings, self.config.n_embd
+        )
         self.tokens_embed.to(old_embed.weight.device)
         self.init_weights(self.tokens_embed)
         # Copy word embeddings from the previous weights
-        self.tokens_embed.weight.data[:self.config.vocab_size, :] = old_embed.weight.data[:self.config.vocab_size, :]
+        self.tokens_embed.weight.data[
+            : self.config.vocab_size, :
+        ] = old_embed.weight.data[: self.config.vocab_size, :]
 
     def prune_heads(self, heads_to_prune):
-        """ Prunes heads of the model.
-            heads_to_prune: dict of {layer_num: list of heads to prune in this layer}
+        """Prunes heads of the model.
+        heads_to_prune: dict of {layer_num: list of heads to prune in this layer}
         """
         for layer, heads in heads_to_prune.items():
             self.h[layer].attn.prune_heads(heads)
 
     def get_multihead_outputs(self):
-        """ Gather all multi-head outputs.
-            Return: list (layers) of multihead module outputs with gradients
+        """Gather all multi-head outputs.
+        Return: list (layers) of multihead module outputs with gradients
         """
         return [h.attn.multihead_output for h in self.h]
 
-    def forward(self, input_ids, position_ids=None, token_type_ids=None, head_mask=None):
+    def forward(
+        self, input_ids, position_ids=None, token_type_ids=None, head_mask=None
+    ):
         if position_ids is None:
             # This was used when we had a single embedding matrice from position and token embeddings
             # start = self.config.vocab_size + self.config.n_special
             # end = start + input_ids.size(-1)
             # position_ids = torch.arange(start, end, dtype=torch.long, device=input_ids.device)
-            position_ids = torch.arange(input_ids.size(-1), dtype=torch.long, device=input_ids.device)
+            position_ids = torch.arange(
+                input_ids.size(-1), dtype=torch.long, device=input_ids.device
+            )
             position_ids = position_ids.unsqueeze(0).expand_as(input_ids)
 
         # Prepare head mask if needed
@@ -717,11 +820,17 @@ class OpenAIGPTModel(OpenAIGPTPreTrainedModel):
         # head_mask has shape n_layer x batch x n_heads x N x N
         if head_mask is not None:
             if head_mask.dim() == 1:
-                head_mask = head_mask.unsqueeze(0).unsqueeze(0).unsqueeze(-1).unsqueeze(-1)
+                head_mask = (
+                    head_mask.unsqueeze(0).unsqueeze(0).unsqueeze(-1).unsqueeze(-1)
+                )
                 head_mask = head_mask.expand_as(self.config.n_layer, -1, -1, -1, -1)
             elif head_mask.dim() == 2:
-                head_mask = head_mask.unsqueeze(1).unsqueeze(-1).unsqueeze(-1)  # We can specify head_mask for each layer
-            head_mask = head_mask.to(dtype=next(self.parameters()).dtype) # switch to fload if need + fp16 compatibility
+                head_mask = (
+                    head_mask.unsqueeze(1).unsqueeze(-1).unsqueeze(-1)
+                )  # We can specify head_mask for each layer
+            head_mask = head_mask.to(
+                dtype=next(self.parameters()).dtype
+            )  # switch to fload if need + fp16 compatibility
         else:
             head_mask = [None] * self.config.n_layer
 
@@ -820,21 +929,38 @@ class OpenAIGPTLMHeadModel(OpenAIGPTPreTrainedModel):
 
     def __init__(self, config, output_attentions=False, keep_multihead_output=False):
         super(OpenAIGPTLMHeadModel, self).__init__(config)
-        self.transformer = OpenAIGPTModel(config, output_attentions=output_attentions,
-                                             keep_multihead_output=keep_multihead_output)
+        self.transformer = OpenAIGPTModel(
+            config,
+            output_attentions=output_attentions,
+            keep_multihead_output=keep_multihead_output,
+        )
         self.lm_head = OpenAIGPTLMHead(self.transformer.tokens_embed.weight, config)
         self.apply(self.init_weights)
 
     def set_num_special_tokens(self, num_special_tokens, predict_special_tokens=True):
-        """ Update input and output embeddings with new embedding matrice
-            Make sure we are sharing the embeddings
+        """Update input and output embeddings with new embedding matrice
+        Make sure we are sharing the embeddings
         """
-        self.config.predict_special_tokens = self.transformer.config.predict_special_tokens = predict_special_tokens
+        self.config.predict_special_tokens = (
+            self.transformer.config.predict_special_tokens
+        ) = predict_special_tokens
         self.transformer.set_num_special_tokens(num_special_tokens)
-        self.lm_head.set_embeddings_weights(self.transformer.tokens_embed.weight, predict_special_tokens=predict_special_tokens)
+        self.lm_head.set_embeddings_weights(
+            self.transformer.tokens_embed.weight,
+            predict_special_tokens=predict_special_tokens,
+        )
 
-    def forward(self, input_ids, position_ids=None, token_type_ids=None, lm_labels=None, head_mask=None):
-        hidden_states = self.transformer(input_ids, position_ids, token_type_ids, head_mask)
+    def forward(
+        self,
+        input_ids,
+        position_ids=None,
+        token_type_ids=None,
+        lm_labels=None,
+        head_mask=None,
+    ):
+        hidden_states = self.transformer(
+            input_ids, position_ids, token_type_ids, head_mask
+        )
         if self.transformer.output_attentions:
             all_attentions, hidden_states = hidden_states
         hidden_states = hidden_states[-1]
@@ -846,8 +972,9 @@ class OpenAIGPTLMHeadModel(OpenAIGPTPreTrainedModel):
             shift_labels = lm_labels[..., 1:].contiguous()
             # Flatten the tokens
             loss_fct = CrossEntropyLoss(ignore_index=-1)
-            loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)),
-                            shift_labels.view(-1))
+            loss = loss_fct(
+                shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1)
+            )
             return loss
         if self.transformer.output_attentions:
             return all_attentions, lm_logits
@@ -922,23 +1049,41 @@ class OpenAIGPTDoubleHeadsModel(OpenAIGPTPreTrainedModel):
 
     def __init__(self, config, output_attentions=False, keep_multihead_output=False):
         super(OpenAIGPTDoubleHeadsModel, self).__init__(config)
-        self.transformer = OpenAIGPTModel(config, output_attentions=output_attentions,
-                                             keep_multihead_output=keep_multihead_output)
+        self.transformer = OpenAIGPTModel(
+            config,
+            output_attentions=output_attentions,
+            keep_multihead_output=keep_multihead_output,
+        )
         self.lm_head = OpenAIGPTLMHead(self.transformer.tokens_embed.weight, config)
         self.multiple_choice_head = OpenAIGPTMultipleChoiceHead(config)
         self.apply(self.init_weights)
 
     def set_num_special_tokens(self, num_special_tokens, predict_special_tokens=True):
-        """ Update input and output embeddings with new embedding matrice
-            Make sure we are sharing the embeddings
+        """Update input and output embeddings with new embedding matrice
+        Make sure we are sharing the embeddings
         """
-        self.config.predict_special_tokens = self.transformer.config.predict_special_tokens = predict_special_tokens
+        self.config.predict_special_tokens = (
+            self.transformer.config.predict_special_tokens
+        ) = predict_special_tokens
         self.transformer.set_num_special_tokens(num_special_tokens)
-        self.lm_head.set_embeddings_weights(self.transformer.tokens_embed.weight, predict_special_tokens=predict_special_tokens)
+        self.lm_head.set_embeddings_weights(
+            self.transformer.tokens_embed.weight,
+            predict_special_tokens=predict_special_tokens,
+        )
 
-    def forward(self, input_ids, mc_token_ids, lm_labels=None, mc_labels=None, token_type_ids=None,
-                position_ids=None, head_mask=None):
-        hidden_states = self.transformer(input_ids, position_ids, token_type_ids, head_mask)
+    def forward(
+        self,
+        input_ids,
+        mc_token_ids,
+        lm_labels=None,
+        mc_labels=None,
+        token_type_ids=None,
+        position_ids=None,
+        head_mask=None,
+    ):
+        hidden_states = self.transformer(
+            input_ids, position_ids, token_type_ids, head_mask
+        )
         if self.transformer.output_attentions:
             all_attentions, hidden_states = hidden_states
         hidden_states = hidden_states[-1]
@@ -950,10 +1095,16 @@ class OpenAIGPTDoubleHeadsModel(OpenAIGPTPreTrainedModel):
             shift_logits = lm_logits[..., :-1, :].contiguous()
             shift_labels = lm_labels[..., 1:].contiguous()
             loss_fct = CrossEntropyLoss(ignore_index=-1)
-            losses.append(loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1)))
+            losses.append(
+                loss_fct(
+                    shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1)
+                )
+            )
         if mc_labels is not None:
             loss_fct = CrossEntropyLoss()
-            losses.append(loss_fct(mc_logits.view(-1, mc_logits.size(-1)), mc_labels.view(-1)))
+            losses.append(
+                loss_fct(mc_logits.view(-1, mc_logits.size(-1)), mc_labels.view(-1))
+            )
         if losses:
             return losses
         if self.transformer.output_attentions:

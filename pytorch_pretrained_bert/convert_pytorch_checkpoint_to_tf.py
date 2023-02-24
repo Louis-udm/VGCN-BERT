@@ -15,15 +15,17 @@
 
 """Convert Huggingface Pytorch checkpoint to Tensorflow checkpoint."""
 
-import os
 import argparse
-import torch
+import os
+
 import numpy as np
 import tensorflow as tf
+import torch
+
 from pytorch_pretrained_bert.modeling import BertModel
 
 
-def convert_pytorch_checkpoint_to_tf(model:BertModel, ckpt_dir:str, model_name:str):
+def convert_pytorch_checkpoint_to_tf(model: BertModel, ckpt_dir: str, model_name: str):
 
     """
     :param model:BertModel Pytorch model instance to be converted
@@ -45,18 +47,18 @@ def convert_pytorch_checkpoint_to_tf(model:BertModel, ckpt_dir:str, model_name:s
         "dense.weight",
         "attention.self.query",
         "attention.self.key",
-        "attention.self.value"
+        "attention.self.value",
     )
 
     var_map = (
-        ('layer.', 'layer_'),
-        ('word_embeddings.weight', 'word_embeddings'),
-        ('position_embeddings.weight', 'position_embeddings'),
-        ('token_type_embeddings.weight', 'token_type_embeddings'),
-        ('.', '/'),
-        ('LayerNorm/weight', 'LayerNorm/gamma'),
-        ('LayerNorm/bias', 'LayerNorm/beta'),
-        ('weight', 'kernel')
+        ("layer.", "layer_"),
+        ("word_embeddings.weight", "word_embeddings"),
+        ("position_embeddings.weight", "position_embeddings"),
+        ("token_type_embeddings.weight", "token_type_embeddings"),
+        (".", "/"),
+        ("LayerNorm/weight", "LayerNorm/gamma"),
+        ("LayerNorm/bias", "LayerNorm/beta"),
+        ("weight", "kernel"),
     )
 
     if not os.path.isdir(ckpt_dir):
@@ -66,12 +68,12 @@ def convert_pytorch_checkpoint_to_tf(model:BertModel, ckpt_dir:str, model_name:s
     state_dict = model.state_dict()
     tf_vars = []
 
-    def to_tf_var_name(name:str):
+    def to_tf_var_name(name: str):
         for patt, repl in iter(var_map):
             name = name.replace(patt, repl)
-        return 'bert/{}'.format(name)
+        return "bert/{}".format(name)
 
-    def assign_tf_var(tensor:np.ndarray, name:str):
+    def assign_tf_var(tensor: np.ndarray, name: str):
         tmp_var = tf.Variable(initial_value=tensor)
         tf_var = tf.get_variable(dtype=tmp_var.dtype, shape=tmp_var.shape, name=name)
         op = tf.assign(ref=tf_var, value=tmp_var)
@@ -94,35 +96,41 @@ def convert_pytorch_checkpoint_to_tf(model:BertModel, ckpt_dir:str, model_name:s
 
 def main(raw_args=None):
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model_name",
-                        type=str,
-                        required=True,
-                        help="model name e.g. bert-base-uncased")
-    parser.add_argument("--cache_dir",
-                        type=str,
-                        default=None,
-                        required=False,
-                        help="Directory containing pytorch model")
-    parser.add_argument("--pytorch_model_path",
-                        type=str,
-                        required=True,
-                        help="/path/to/<pytorch-model-name>.bin")
-    parser.add_argument("--tf_cache_dir",
-                        type=str,
-                        required=True,
-                        help="Directory in which to save tensorflow model")
+    parser.add_argument(
+        "--model_name",
+        type=str,
+        required=True,
+        help="model name e.g. bert-base-uncased",
+    )
+    parser.add_argument(
+        "--cache_dir",
+        type=str,
+        default=None,
+        required=False,
+        help="Directory containing pytorch model",
+    )
+    parser.add_argument(
+        "--pytorch_model_path",
+        type=str,
+        required=True,
+        help="/path/to/<pytorch-model-name>.bin",
+    )
+    parser.add_argument(
+        "--tf_cache_dir",
+        type=str,
+        required=True,
+        help="Directory in which to save tensorflow model",
+    )
     args = parser.parse_args(raw_args)
-    
+
     model = BertModel.from_pretrained(
         pretrained_model_name_or_path=args.model_name,
         state_dict=torch.load(args.pytorch_model_path),
-        cache_dir=args.cache_dir
+        cache_dir=args.cache_dir,
     )
-    
+
     convert_pytorch_checkpoint_to_tf(
-        model=model,
-        ckpt_dir=args.tf_cache_dir,
-        model_name=args.model_name
+        model=model, ckpt_dir=args.tf_cache_dir, model_name=args.model_name
     )
 
 
