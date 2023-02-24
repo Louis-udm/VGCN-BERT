@@ -124,31 +124,17 @@ model_file_save = (
 print(cfg_model_type + " Start at:", time.asctime())
 print(
     "\n----- Configure -----",
-    "\n  cfg_ds:",
-    cfg_ds,
-    "\n  stop_words:",
-    cfg_stop_words,
+    f"\n  cfg_ds: {cfg_ds}",
+    f"\n  stop_words: {cfg_stop_words}",
     # '\n  Vocab GCN_hidden_dim: 768 -> 1152 -> 768',
-    "\n  Vocab GCN_hidden_dim: vocab_size -> 128 -> " + str(gcn_embedding_dim),
-    "\n  Learning_rate0:",
-    learning_rate0,
-    "weight_decay:",
-    l2_decay,
-    "\n  Loss_criterion",
-    cfg_loss_criterion,
-    "softmax_before_mse",
-    do_softmax_before_mse,
-    "\n  Dropout:",
-    dropout_rate,
-    "Run_adj:",
-    cfg_vocab_adj,
-    "gcn_act_func: Relu",
-    "\n  MAX_SEQ_LENGTH:",
-    MAX_SEQ_LENGTH,  #'valid_data_taux',valid_data_taux,
-    "\n  perform_metrics_str:",
-    perform_metrics_str,
-    "\n  model_file_save:",
-    model_file_save,
+    f"\n  Vocab GCN_hidden_dim: vocab_size -> 128 -> {str(gcn_embedding_dim)}",
+    f"\n  Learning_rate0: {learning_rate0}  weight_decay: {l2_decay}",
+    f"\n  Loss_criterion {cfg_loss_criterion}",
+    f"softmax_before_mse {do_softmax_before_mse}",
+    f"\n  Dropout: {dropout_rate} Run_adj: {cfg_vocab_adj} gcn_act_func: Relu",
+    f"\n  MAX_SEQ_LENGTH: {MAX_SEQ_LENGTH}", #'valid_data_taux',valid_data_taux
+    f"\n  perform_metrics_str: {perform_metrics_str}",
+    f"\n  model_file_save: {model_file_save}",
 )
 
 
@@ -159,7 +145,7 @@ Load vocabulary adjacent matrix
 """
 print("\n----- Prepare data set -----")
 print(
-    "  Load/shuffle/seperate", cfg_ds, "dataset, and vocabulary graph adjacent matrix"
+    f"  Load/shuffle/seperate {cfg_ds} dataset, and vocabulary graph adjacent matrix"
 )
 
 objects = []
@@ -326,10 +312,8 @@ total_train_steps = int(
 
 print("  Train_classes count:", train_classes_num)
 print(
-    "  Num examples for train =",
-    len(train_examples),
-    ", after weight sample:",
-    len(train_dataloader) * batch_size,
+    f"  Num examples for train = {len(train_examples)}",
+    f", after weight sample: {len(train_dataloader) * batch_size}",
 )
 print("  Num examples for validate = %d" % len(valid_examples))
 print("  Batch size = %d" % batch_size)
@@ -467,16 +451,11 @@ if will_train_mode_from_checkpoint and os.path.exists(
     net_state_dict.update(pretrained_dict_selected)
     model.load_state_dict(net_state_dict)
     print(
-        "Loaded the pretrain model:",
-        model_file_save,
-        ", epoch:",
-        checkpoint["epoch"],
-        "step:",
-        prev_save_step,
-        "valid acc:",
-        checkpoint["valid_acc"],
-        " ".join(perform_metrics_str) + "_valid:",
-        checkpoint["perform_metrics"],
+        f"Loaded the pretrain model: {model_file_save}",
+        f", epoch: {checkpoint['epoch']}",
+        f"step: {prev_save_step}",
+        f"valid acc: {checkpoint['valid_acc']}",
+        f"{' '.join(perform_metrics_str)}_valid: {checkpoint['perform_metrics']}",
     )
 
 else:
