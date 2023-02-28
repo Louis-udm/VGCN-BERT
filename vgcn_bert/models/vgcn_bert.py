@@ -10,7 +10,9 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.init as init
-from pytorch_pretrained_bert.modeling import (  # for huggingface transformers 0.6.2; from transformers.models.bert.modeling_bert import (
+
+# for huggingface transformers 0.6.2;
+from pytorch_pretrained_bert.modeling import (
     BertEmbeddings,
     BertEncoder,
     BertModel,

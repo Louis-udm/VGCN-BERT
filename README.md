@@ -31,6 +31,13 @@ If you make use of this code or the VGCN-BERT approach in your work, please cite
 ## Directory Structure
 The *data/* directory contains the original datasets and the corresponding pre-processed data. The *output/* directory saves the model files while training the models. The *pytorch_pretrained_bert/* directory is the module of Huggingface transformer 0.6.2. The other files with the *.py* suffix are models, utility functions, training programs, and prediction programs.
 
+## Pretrained BERT weights
+We mainly use https://huggingface.co/bert-base-uncased as the pretrained Bert weights. If you want first download the model fiels or use yourself pretrained model, you can modify the 2 env variables in `.env` as follows.
+```
+TRANSFORMERS_OFFLINE=1
+HUGGING_LOCAL_MODEL_FILES_PATH=/tmp/local-huggingface-models
+```
+
 ## Running the code
 
 ### Pre-processing datasets
@@ -38,6 +45,7 @@ Run *prepare_data.py* to pre-process the dataset and generate the vocabulary gra
 
 **Examples:**
 ```
+cd VGCN-BERT
 python -m vgcn_bert.prepare_data --ds cola
 ```
 
@@ -47,6 +55,7 @@ Run *train_vanilla_vgcn_bert.py* to train the Vanilla-VGCN-BERT model. Before tr
 
 **Examples:**
 ```
+cd VGCN-BERT
 python -m vgcn_bert.train_vanilla_vgcn_bert --ds cola
 ```
 
@@ -54,5 +63,6 @@ Run *train_vgcn_bert.py* to train the VGCN-BERT model. Before training the model
 
 **Examples:**
 ```
+cd VGCN-BERT
 python -m vgcn_bert.train_vgcn_bert --ds cola
 ```
