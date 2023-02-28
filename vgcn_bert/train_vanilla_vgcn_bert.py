@@ -17,12 +17,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from pytorch_pretrained_bert.modeling import (
-    CONFIG_NAME,
-    WEIGHTS_NAME,
-    BertConfig,
-    BertModel,
-)
+
+# use pytorch_pretrained_bert.modeling for huggingface transformers 0.6.2
 from pytorch_pretrained_bert.optimization import BertAdam  # , warmup_linear
 from pytorch_pretrained_bert.tokenization import BertTokenizer
 
@@ -30,12 +26,17 @@ from pytorch_pretrained_bert.tokenization import BertTokenizer
 from sklearn.metrics import classification_report, f1_score
 from torch.utils.data import DataLoader
 
-from utils import *
+from vgcn_bert.env_config import env_config
 from vgcn_bert.models.vanilla_vgcn_bert import Vanilla_VGCN_Bert
+from vgcn_bert.utils import *
 
-random.seed(44)
-np.random.seed(44)
-torch.manual_seed(44)
+# from transformers import BertTokenizer,AdamW
+
+
+random.seed(env_config.GLOBAL_SEED)
+np.random.seed(env_config.GLOBAL_SEED)
+torch.manual_seed(env_config.GLOBAL_SEED)
+
 
 cuda_yes = torch.cuda.is_available()
 if cuda_yes:
@@ -48,14 +49,14 @@ Configuration
 """
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--ds", type=str, default="mr")
+parser.add_argument("--ds", type=str, default="cola")
 parser.add_argument("--load", type=int, default=0)
 parser.add_argument("--sw", type=int, default="0")
 parser.add_argument("--lr", type=float, default=1e-5)
 parser.add_argument("--l2", type=float, default=0.01)
 parser.add_argument("--model", type=str, default="Vanilla_VGCN_BERT")
+parser.add_argument("--validate_program", action="store_true", default=True)
 args = parser.parse_args()
-cfg_ds = args.ds
 cfg_model_type = args.model
 cfg_stop_words = True if args.sw == 1 else False
 will_train_mode_from_checkpoint = True if args.load == 1 else False
@@ -67,12 +68,12 @@ dataset_list = {"sst", "cola"}
 
 total_train_epochs = 9
 dropout_rate = 0.2  # 0.5 # Dropout rate (1 - keep probability).
-if cfg_ds == "sst":
+if args.ds == "sst":
     batch_size = 16  # 12
     learning_rate0 = 1e-5  # 2e-5
     # l2_decay = 0.001
     l2_decay = 0.01  # default
-elif cfg_ds == "cola":
+elif args.ds == "cola":
     batch_size = 16  # 12
     learning_rate0 = 8e-6  # 2e-5
     l2_decay = 0.01
@@ -81,10 +82,16 @@ MAX_SEQ_LENGTH = 200
 gcn_embedding_dim = 1
 gradient_accumulation_steps = 1
 bert_model_scale = "bert-base-uncased"
+if env_config.TRANSFORMERS_OFFLINE == 1:
+    bert_model_scale = os.path.join(
+        env_config.HUGGING_LOCAL_MODEL_FILES_PATH,
+        f"hf-maintainers_{bert_model_scale}",
+    )
+
 do_lower_case = True
 warmup_proportion = 0.1
 
-data_dir = "data/dump_data"
+data_dir = f"data/preprocessed/{args.ds}"
 output_dir = "output/"
 if not os.path.exists(output_dir):
     os.mkdir(output_dir)
@@ -106,7 +113,7 @@ model_file_save = (
     cfg_model_type
     + str(gcn_embedding_dim)
     + "_model_"
-    + cfg_ds
+    + args.ds
     + "_"
     + cfg_loss_criterion
     + "_"
@@ -118,8 +125,8 @@ model_file_save = (
 print(cfg_model_type + " Start at:", time.asctime())
 print(
     "\n----- Configure -----",
-    "\n  cfg_ds:",
-    cfg_ds,
+    "\n  args.ds:",
+    args.ds,
     "\n  stop_words:",
     cfg_stop_words,
     "\n  Learning_rate0:",
@@ -141,6 +148,7 @@ print(
     perform_metrics_str,
     "\n  model_file_save:",
     model_file_save,
+    f"\n  validate_program: {args.validate_program}",
 )
 
 
@@ -151,7 +159,7 @@ Load vocabulary adjacent matrix
 print("\n----- Prepare data set -----")
 print(
     "  Load/shuffle/seperate",
-    cfg_ds,
+    args.ds,
     "dataset, and vocabulary graph adjacent matrix",
 )
 
@@ -170,7 +178,7 @@ names = [
     "vocab_map",
 ]
 for i in range(len(names)):
-    datafile = "./" + data_dir + "/data_%s.%s" % (cfg_ds, names[i])
+    datafile = "./" + data_dir + "/data_%s.%s" % (args.ds, names[i])
     with open(datafile, "rb") as f:
         objects.append(pkl.load(f, encoding="latin1"))
 (
@@ -304,6 +312,12 @@ def get_pytorch_dataloader(
             collate_fn=ds.pad,
         )
 
+
+# ds size=1 for validating the program
+if args.validate_program:
+    train_examples = [train_examples[0]]
+    valid_examples = [valid_examples[0]]
+    test_examples = [test_examples[0]]
 
 train_dataloader = get_pytorch_dataloader(
     train_examples, tokenizer, batch_size, shuffle_choice=0

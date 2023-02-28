@@ -10,8 +10,9 @@ requires-python = ">=3.9"
 dependencies = [
   "pandas==1.4.*",
   "numpy==1.21.*",
+  "pytorch>=1.0",
   "scikit-learn==1.1.*",
-  "transformers",
+  "transformers==0.6.2",
   "nltk",
   "tqdm",
   "python-dotenv",

@@ -21,7 +21,7 @@ If you make use of this code or the VGCN-BERT approach in your work, please cite
 	   }
 
 ## Requirements
-- Python 3.7
+- Python >= 3.7
 - NLTK 3.4
 - [PyTorch 1.0](https://pytorch.org)
 - [Huggingface transformer 0.6.2](https://github.com/huggingface/transformers/releases/tag/v0.6.2)
@@ -34,7 +34,7 @@ The *data/* directory contains the original datasets and the corresponding pre-p
 ## Running the code
 
 ### Pre-processing datasets
-Run *prepare_data.py* to pre-process the dataset and generate the vocabulary graph. 
+Run *prepare_data.py* to pre-process the dataset and generate the vocabulary graph.
 
 **Examples:**
 ```

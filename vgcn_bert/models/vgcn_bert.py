@@ -10,7 +10,7 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.init as init
-from pytorch_pretrained_bert.modeling import (
+from pytorch_pretrained_bert.modeling import (  # for huggingface transformers 0.6.2; from transformers.models.bert.modeling_bert import (
     BertEmbeddings,
     BertEncoder,
     BertModel,
@@ -39,7 +39,7 @@ class VocabGraphConvolution(nn.Module):
     """
 
     def __init__(self, voc_dim, num_adj, hid_dim, out_dim, dropout_rate=0.2):
-        super(VocabGraphConvolution, self).__init__()
+        super().__init__()
         self.voc_dim = voc_dim
         self.num_adj = num_adj
         self.hid_dim = hid_dim
@@ -183,7 +183,7 @@ class VGCNBertEmbeddings(BertEmbeddings):
     """
 
     def __init__(self, config, gcn_adj_dim, gcn_adj_num, gcn_embedding_dim):
-        super(VGCNBertEmbeddings, self).__init__(config)
+        super().__init__(config)
         assert gcn_embedding_dim >= 0
         self.gcn_embedding_dim = gcn_embedding_dim
         self.vocab_gcn = VocabGraphConvolution(
@@ -244,7 +244,7 @@ class VGCNBertEmbeddings(BertEmbeddings):
         return embeddings
 
 
-class VGCN_Bert(BertModel):
+class VGCNBertModel(BertModel):
     """VGCN-BERT model for text classification. It inherits from Huggingface's BertModel.
 
     Params:
@@ -290,26 +290,29 @@ class VGCN_Bert(BertModel):
         output_attentions=False,
         keep_multihead_output=False,
     ):
-        super(VGCN_Bert, self).__init__(
-            config, output_attentions, keep_multihead_output
+        super().__init__(
+            config,
+            # add_pooling_layer=True,
+            output_attentions,
+            keep_multihead_output,
         )
         self.embeddings = VGCNBertEmbeddings(
             config, gcn_adj_dim, gcn_adj_num, gcn_embedding_dim
         )
         self.encoder = BertEncoder(
             config,
-            output_attentions=output_attentions,
-            keep_multihead_output=keep_multihead_output,
         )
-        self.pooler = BertPooler(config)
+        self.pooler = BertPooler(config)  # if add_pooling_layer else None
         self.num_labels = num_labels
+        # self.num_labels = config.num_labels
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
-        self.classifier = nn.Linear(config.hidden_size, num_labels)
+        self.classifier = nn.Linear(config.hidden_size, self.num_labels)
         self.will_collect_cls_states = False
         self.all_cls_states = []
         self.output_attentions = output_attentions
 
         self.apply(self.init_bert_weights)
+        # super().post_init()
 
     def forward(
         self,

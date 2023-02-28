@@ -13,7 +13,7 @@ build/
 trying/
 
 # data files
-# data/
+data/preprocessed
 # model or output dir
 output/
 
@@ -42,7 +42,7 @@ throttle.ctrl
 .vscode
 
 # env file
-.env
+# .env
 
 # Compiled Python bytecode
 *.py[cod]

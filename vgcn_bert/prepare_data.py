@@ -15,12 +15,16 @@ import time
 
 import nltk
 import numpy as np
+import pandas as pd
 import scipy.sparse as sp
 from nltk.corpus import stopwords
 from sklearn.utils import shuffle
 
-random.seed(44)
-np.random.seed(44)
+from vgcn_bert.env_config import env_config
+from vgcn_bert.utils import clean_str, del_http_user_tokenize
+
+random.seed(env_config.GLOBAL_SEED)
+np.random.seed(env_config.GLOBAL_SEED)
 
 # import torch
 # cuda_yes = torch.cuda.is_available()
@@ -46,9 +50,9 @@ if cfg_ds not in dataset_list:
     sys.exit("Dataset choice error!")
 
 will_dump_objects = True
-dump_dir = "data/dump_data"
+dump_dir = f"data/preprocessed/{cfg_ds}/"
 if not os.path.exists(dump_dir):
-    os.mkdir(dump_dir)
+    os.makedirs(dump_dir)
 
 if cfg_del_stop_words:
     freq_min_for_word_choice = 5
@@ -70,8 +74,14 @@ tfidf_mode = "only_tf"
 # 在clean doc时是否使用bert_tokenizer分词, data3时不用更好
 cfg_use_bert_tokenizer_at_clean = True
 
-bert_model_scale = "bert-base-uncased"
 # bert_model_scale='bert-large-uncased'
+bert_model_scale = "bert-base-uncased"
+if env_config.TRANSFORMERS_OFFLINE == 1:
+    bert_model_scale = os.path.join(
+        env_config.HUGGING_LOCAL_MODEL_FILES_PATH,
+        f"hf-maintainers_{bert_model_scale}",
+    )
+
 bert_lower_case = True
 
 print("---data prepare configure---")
@@ -97,23 +107,6 @@ Get the tweets,y,confidence etc from data file
 """
 print("Get the tweets,y,confidence etc from data file...")
 start = time.time()
-
-import pandas as pd
-
-
-def del_http_user_tokenize(tweet):
-    # delete [ \t\n\r\f\v]
-    space_pattern = r"\s+"
-    url_regex = (
-        r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|"
-        r"[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
-    )
-    mention_regex = r"@[\w\-]+"
-    tweet = re.sub(space_pattern, " ", tweet)
-    tweet = re.sub(url_regex, "", tweet)
-    tweet = re.sub(mention_regex, "", tweet)
-    return tweet
-
 
 if cfg_ds == "sst":
     from get_sst_data import DataReader
@@ -226,35 +219,17 @@ else:
 print("Stop_words:", stop_words)
 
 
-def clean_str(string):
-    """
-    Tokenization/string cleaning for all datasets except for SST.
-    Original taken from https://github.com/yoonkim/CNN_sentence/blob/master/process_data.py
-    """
-    string = re.sub(r"[^A-Za-z0-9(),!?\'\`]", " ", string)
-    # string = " ".join(re.split("[^a-zA-Z]", string.lower())).strip()
-    string = re.sub(r"\'s", " 's", string)
-    string = re.sub(r"\'ve", " 've", string)
-    string = re.sub(r"n\'t", " n't", string)
-    string = re.sub(r"\'re", " 're", string)
-    string = re.sub(r"\'d", " 'd", string)
-    string = re.sub(r"\'ll", " 'll", string)
-    string = re.sub(r",", " , ", string)
-    string = re.sub(r"!", " ! ", string)
-    string = re.sub(r"\(", " \( ", string)
-    string = re.sub(r"\)", " \) ", string)
-    string = re.sub(r"\?", " \? ", string)
-    string = re.sub(r"\s{2,}", " ", string)
-    return string.strip().lower()
-
-
 tmp_word_freq = {}  # to remove rare words
 new_doc_content_list = []
 
 # use bert_tokenizer for split the sentence
 if cfg_use_bert_tokenizer_at_clean:
     print("Use bert_tokenizer for seperate words to bert vocab")
-    from pytorch_pretrained_bert import BertTokenizer
+    from pytorch_pretrained_bert import (  # for Huggingface transformer 0.6.2)
+        BertTokenizer,
+    )
+
+    # from transformers import BertTokenizer
 
     bert_tokenizer = BertTokenizer.from_pretrained(
         bert_model_scale, do_lower_case=bert_lower_case
@@ -615,7 +590,7 @@ vocab_tfidf = tfidf_all.T.tolil()
 for i in range(vocab_size):
     norm = np.linalg.norm(vocab_tfidf.data[i])
     if norm > 0:
-        vocab_tfidf.data[i] /= norm
+        vocab_tfidf.data[i] = (vocab_tfidf.data[i] / norm).tolist()
 vocab_adj_tf = vocab_tfidf.dot(vocab_tfidf.T)
 
 # check
