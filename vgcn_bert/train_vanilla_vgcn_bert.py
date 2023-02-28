@@ -122,6 +122,9 @@ model_file_4save = (
     + ".pt"
 )
 
+if args.validate_program:
+    total_train_epochs = 1
+
 print(cfg_model_type + " Start at:", time.asctime())
 print(
     "\n----- Configure -----",
@@ -244,7 +247,7 @@ gc.collect()
 train_classes_num, train_classes_weight = get_class_count_and_weight(
     train_y, len(label2idx)
 )
-loss_weight = torch.tensor(train_classes_weight).to(device)
+loss_weight = torch.tensor(train_classes_weight, dtype=torch.float).to(device)
 
 tokenizer = BertTokenizer.from_pretrained(
     bert_model_scale, do_lower_case=do_lower_case
@@ -521,9 +524,7 @@ for epoch in range(start_epoch, total_train_epochs):
                 loss = F.cross_entropy(logits, label_ids)
             else:
                 loss = F.cross_entropy(
-                    logits.view(-1, num_classes),
-                    label_ids,
-                    loss_weight.float(),
+                    logits.view(-1, num_classes), label_ids, loss_weight
                 )
 
         if gradient_accumulation_steps > 1:

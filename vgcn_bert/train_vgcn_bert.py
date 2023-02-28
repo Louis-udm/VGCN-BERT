@@ -116,10 +116,8 @@ model_file_4save = (
     f"_sw{int(cfg_stop_words)}.pt"
 )
 
-
 if args.validate_program:
     total_train_epochs = 1
-
 
 print(cfg_model_type + " Start at:", time.asctime())
 print(
