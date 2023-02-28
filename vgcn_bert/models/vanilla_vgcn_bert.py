@@ -16,7 +16,7 @@ from .vgcn_bert import VocabGraphConvolution
 # from transformers.models.bert.modeling_bert import BertForSequenceClassification
 
 
-class Vanilla_VGCN_Bert(BertForSequenceClassification):
+class VanillaVGCNBert(BertForSequenceClassification):
     def __init__(
         self,
         config,
@@ -27,7 +27,7 @@ class Vanilla_VGCN_Bert(BertForSequenceClassification):
         output_attentions=False,
         keep_multihead_output=False,
     ):
-        super(Vanilla_VGCN_Bert, self).__init__(
+        super().__init__(
             config, num_labels, output_attentions=output_attentions
         )
 

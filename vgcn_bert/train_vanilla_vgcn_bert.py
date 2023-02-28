@@ -27,7 +27,7 @@ from sklearn.metrics import classification_report, f1_score
 from torch.utils.data import DataLoader
 
 from vgcn_bert.env_config import env_config
-from vgcn_bert.models.vanilla_vgcn_bert import Vanilla_VGCN_Bert
+from vgcn_bert.models.vanilla_vgcn_bert import VanillaVGCNBert
 from vgcn_bert.utils import *
 
 # from transformers import BertTokenizer,AdamW
@@ -55,7 +55,7 @@ parser.add_argument("--sw", type=int, default="0")
 parser.add_argument("--lr", type=float, default=1e-5)
 parser.add_argument("--l2", type=float, default=0.01)
 parser.add_argument("--model", type=str, default="Vanilla_VGCN_BERT")
-parser.add_argument("--validate_program", action="store_true", default=True)
+parser.add_argument("--validate_program", action="store_true")
 args = parser.parse_args()
 cfg_model_type = args.model
 cfg_stop_words = True if args.sw == 1 else False
@@ -109,7 +109,7 @@ classifier_act_func = nn.ReLU()
 resample_train_set = False  # if mse and resample, then do resample
 do_softmax_before_mse = True
 cfg_loss_criterion = "cle"
-model_file_save = (
+model_file_4save = (
     cfg_model_type
     + str(gcn_embedding_dim)
     + "_model_"
@@ -125,29 +125,17 @@ model_file_save = (
 print(cfg_model_type + " Start at:", time.asctime())
 print(
     "\n----- Configure -----",
-    "\n  args.ds:",
-    args.ds,
-    "\n  stop_words:",
-    cfg_stop_words,
-    "\n  Learning_rate0:",
-    learning_rate0,
-    "weight_decay:",
-    l2_decay,
-    "\n  Loss_criterion",
-    cfg_loss_criterion,
-    "softmax_before_mse",
-    do_softmax_before_mse,
-    "\n  Dropout:",
-    dropout_rate,
-    "Run_adj:",
-    cfg_vocab_adj,
-    "gcn_act_func: Relu",
-    "\n  MAX_SEQ_LENGTH:",
-    MAX_SEQ_LENGTH,  #'valid_data_taux',valid_data_taux,
-    "\n  perform_metrics_str:",
-    perform_metrics_str,
-    "\n  model_file_save:",
-    model_file_save,
+    f"\n  args.ds: {args.ds}",
+    f"\n  stop_words: {cfg_stop_words}",
+    f"\n  Learning_rate0: {learning_rate0}" f"\n  weight_decay: {l2_decay}",
+    f"\n  Loss_criterion {cfg_loss_criterion}"
+    f"\n  softmax_before_mse: {do_softmax_before_mse}",
+    f"\n  Dropout: {dropout_rate}"
+    f"\n  Run_adj: {cfg_vocab_adj}"
+    f"\n  gcn_act_func: Relu",
+    f"\n  MAX_SEQ_LENGTH: {MAX_SEQ_LENGTH}",  #'valid_data_taux',valid_data_taux
+    f"\n  perform_metrics_str: {perform_metrics_str}",
+    f"\n  model_file_4save: {model_file_4save}",
     f"\n  validate_program: {args.validate_program}",
 )
 
@@ -337,10 +325,8 @@ total_train_steps = int(
 
 print("  Train_classes count:", train_classes_num)
 print(
-    "  Num examples for train =",
-    len(train_examples),
-    ", after weight sample:",
-    len(train_dataloader) * batch_size,
+    f"  Num examples for train = {len(train_examples)}",
+    f", after weight sample: {len(train_dataloader) * batch_size}",
 )
 print("  Num examples for validate = %d" % len(valid_examples))
 print("  Batch size = %d" % batch_size)
@@ -434,10 +420,10 @@ def evaluate(
 
 print("\n----- Running training -----")
 if will_train_mode_from_checkpoint and os.path.exists(
-    os.path.join(output_dir, model_file_save)
+    os.path.join(output_dir, model_file_4save)
 ):
     checkpoint = torch.load(
-        os.path.join(output_dir, model_file_save), map_location="cpu"
+        os.path.join(output_dir, model_file_4save), map_location="cpu"
     )
     if "step" in checkpoint:
         prev_save_step = checkpoint["step"]
@@ -448,7 +434,7 @@ if will_train_mode_from_checkpoint and os.path.exists(
     start_epoch = checkpoint["epoch"] + 1
     valid_acc_prev = checkpoint["valid_acc"]
     perform_metrics_prev = checkpoint["perform_metrics"]
-    model = Vanilla_VGCN_Bert.from_pretrained(
+    model = VanillaVGCNBert.from_pretrained(
         bert_model_scale,
         state_dict=checkpoint["model_state"],
         gcn_adj_dim=gcn_vocab_size,
@@ -458,7 +444,7 @@ if will_train_mode_from_checkpoint and os.path.exists(
     )
     print(
         "Loaded the pretrain model:",
-        model_file_save,
+        model_file_4save,
         ", epoch:",
         checkpoint["epoch"],
         "valid acc:",
@@ -471,7 +457,7 @@ else:
     start_epoch = 0
     valid_acc_prev = 0
     perform_metrics_prev = 0
-    model = Vanilla_VGCN_Bert.from_pretrained(
+    model = VanillaVGCNBert.from_pretrained(
         bert_model_scale,
         gcn_adj_dim=gcn_vocab_size,
         gcn_adj_num=len(gcn_adj_list),
@@ -588,7 +574,7 @@ for epoch in range(start_epoch, total_train_epochs):
             "lower_case": do_lower_case,
             "perform_metrics": perform_metrics,
         }
-        torch.save(to_save, os.path.join(output_dir, model_file_save))
+        torch.save(to_save, os.path.join(output_dir, model_file_4save))
         # valid_acc_prev = valid_acc
         perform_metrics_prev = perform_metrics
         test_f1_when_valid_best = test_f1

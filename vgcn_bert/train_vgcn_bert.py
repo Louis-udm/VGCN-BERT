@@ -54,7 +54,7 @@ parser.add_argument("--dim", type=int, default="16")
 parser.add_argument("--lr", type=float, default=1e-5)
 parser.add_argument("--l2", type=float, default=0.01)
 parser.add_argument("--model", type=str, default="VGCN_BERT")
-parser.add_argument("--validate_program", action="store_true", default=True)
+parser.add_argument("--validate_program", action="store_true")
 args = parser.parse_args()
 args.ds = args.ds
 cfg_model_type = args.model
