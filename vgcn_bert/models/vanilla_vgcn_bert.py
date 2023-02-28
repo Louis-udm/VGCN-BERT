@@ -9,7 +9,10 @@ import torch
 import torch.nn as nn
 
 # for huggingface transformers 0.6.2
-from pytorch_pretrained_bert.modeling import BertForSequenceClassification
+# from pytorch_pretrained_bert.modeling import BertForSequenceClassification
+from transformers.models.bert.modeling_bert import (
+    BertForSequenceClassification,
+)
 
 from .vgcn_bert import VocabGraphConvolution
 

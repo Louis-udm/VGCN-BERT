@@ -12,7 +12,8 @@ import torch.nn as nn
 import torch.nn.init as init
 
 # for huggingface transformers 0.6.2;
-from pytorch_pretrained_bert.modeling import (
+# from pytorch_pretrained_bert.modeling import (
+from transformers.models.bert.modeling_bert import (
     BertEmbeddings,
     BertEncoder,
     BertModel,
@@ -288,16 +289,10 @@ class VGCNBertModel(BertModel):
         gcn_adj_dim,
         gcn_adj_num,
         gcn_embedding_dim,
-        num_labels,
-        output_attentions=False,
-        keep_multihead_output=False,
+        # num_labels,
     ):
-        super().__init__(
-            config,
-            # add_pooling_layer=True,
-            output_attentions,
-            keep_multihead_output,
-        )
+        super().__init__(config, add_pooling_layer=True)
+
         self.embeddings = VGCNBertEmbeddings(
             config, gcn_adj_dim, gcn_adj_num, gcn_embedding_dim
         )
@@ -305,16 +300,15 @@ class VGCNBertModel(BertModel):
             config,
         )
         self.pooler = BertPooler(config)  # if add_pooling_layer else None
-        self.num_labels = num_labels
-        # self.num_labels = config.num_labels
+        self.num_labels = config.num_labels
+        # self.num_labels = num_labels
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.classifier = nn.Linear(config.hidden_size, self.num_labels)
         self.will_collect_cls_states = False
         self.all_cls_states = []
-        self.output_attentions = output_attentions
 
-        self.apply(self.init_bert_weights)
-        # super().post_init()
+        # self.apply(self.init_bert_weights)
+        super().post_init()
 
     def forward(
         self,

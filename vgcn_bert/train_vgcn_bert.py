@@ -17,20 +17,18 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# use pytorch_pretrained_bert.modeling for huggingface transformers 0.6.2
-from pytorch_pretrained_bert.optimization import BertAdam  # , warmup_linear
-from pytorch_pretrained_bert.tokenization import BertTokenizer
-
 # from tqdm import tqdm, trange
 from sklearn.metrics import classification_report, f1_score
 from torch.utils.data import DataLoader
 
+# use pytorch_pretrained_bert.modeling for huggingface transformers 0.6.2
+# from pytorch_pretrained_bert.optimization import BertAdam  # , warmup_linear
+# from pytorch_pretrained_bert.tokenization import BertTokenizer
+from transformers import AdamW, BertTokenizer
+
 from vgcn_bert.env_config import env_config
 from vgcn_bert.models.vgcn_bert import VGCNBertModel
 from vgcn_bert.utils import *
-
-# from transformers import BertTokenizer,AdamW
-
 
 random.seed(env_config.GLOBAL_SEED)
 np.random.seed(env_config.GLOBAL_SEED)
@@ -499,11 +497,11 @@ else:
 
 model.to(device)
 
-optimizer = BertAdam(
+optimizer = AdamW(
     model.parameters(),
     lr=learning_rate0,
-    warmup=warmup_proportion,
-    t_total=total_train_steps,
+    # warmup=warmup_proportion,
+    # t_total=total_train_steps,
     weight_decay=l2_decay,
 )
 
