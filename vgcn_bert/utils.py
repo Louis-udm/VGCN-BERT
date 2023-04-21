@@ -3,11 +3,13 @@
 # @author Zhibin.LU
 # @website: https://github.com/Louis-udm
 
+import os
 import re
 
 import numpy as np
 import scipy.sparse as sp
 import torch
+import transformers as tfr
 from nltk.tokenize import TweetTokenizer
 from torch.utils import data
 from torch.utils.data import (
@@ -23,6 +25,21 @@ from torch.utils.data.distributed import DistributedSampler
 """
 General functions
 """
+
+
+def get_bert_tokenizer(env_config, model_name, do_lower_case):
+    if env_config.TRANSFORMERS_OFFLINE == 1:
+        model_name = os.path.join(
+            env_config.HUGGING_LOCAL_MODEL_FILES_PATH,
+            f"hf-maintainers_{model_name}",
+        )
+
+    # from pytorch_pretrained_bert import (  # for Huggingface transformer 0.6.2)
+    #     BertTokenizer,
+    # )
+    return tfr.BertTokenizer.from_pretrained(
+        model_name, do_lower_case=do_lower_case
+    )
 
 
 def del_http_user_tokenize(tweet):
@@ -179,7 +196,6 @@ def _truncate_seq_pair(tokens_a, tokens_b, max_length):
 def example2feature(
     example, tokenizer, gcn_vocab_map, max_seq_len, gcn_embedding_dim
 ):
-
     # tokens_a = tokenizer.tokenize(example.text_a)
     # do not need use bert.tokenizer again, because be used at prepare_data.py
     tokens_a = example.text_a.split()

@@ -50,7 +50,6 @@ class VanillaVGCNBert(BertForSequenceClassification):
         output_all_encoded_layers=False,
         head_mask=None,
     ):
-
         words_embeddings = self.bert.embeddings.word_embeddings(input_ids)
         vocab_input = gcn_swop_eye.matmul(words_embeddings).transpose(1, 2)
         gcn_vocab_out = self.vocab_gcn(vocab_adj_list, vocab_input).transpose(

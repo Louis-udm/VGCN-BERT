@@ -17,14 +17,14 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# from tqdm import tqdm, trange
-from sklearn.metrics import classification_report, f1_score
-from torch.utils.data import DataLoader
-
 # use pytorch_pretrained_bert.modeling for huggingface transformers 0.6.2
 # from pytorch_pretrained_bert.optimization import BertAdam  # , warmup_linear
 # from pytorch_pretrained_bert.tokenization import BertTokenizer
-from transformers import AdamW, BertTokenizer
+import transformers as tfr
+
+# from tqdm import tqdm, trange
+from sklearn.metrics import classification_report, f1_score
+from torch.utils.data import DataLoader
 
 from vgcn_bert.env_config import env_config
 from vgcn_bert.models.vgcn_bert import VGCNBertModel
@@ -82,11 +82,6 @@ gradient_accumulation_steps = 1
 
 # bert_model_scale='bert-large-uncased'
 bert_model_scale = "bert-base-uncased"
-if env_config.TRANSFORMERS_OFFLINE == 1:
-    bert_model_scale = os.path.join(
-        env_config.HUGGING_LOCAL_MODEL_FILES_PATH,
-        f"hf-maintainers_{bert_model_scale}",
-    )
 
 do_lower_case = True
 warmup_proportion = 0.1
@@ -241,9 +236,7 @@ train_classes_num, train_classes_weight = get_class_count_and_weight(
 )
 loss_weight = torch.tensor(train_classes_weight, dtype=torch.float).to(device)
 
-tokenizer = BertTokenizer.from_pretrained(
-    bert_model_scale, do_lower_case=do_lower_case
-)
+tokenizer = get_bert_tokenizer(env_config, bert_model_scale, do_lower_case)
 
 
 def get_pytorch_dataloader(
@@ -298,7 +291,7 @@ def get_pytorch_dataloader(
 
 # ds size=1 for validating the program
 if args.validate_program:
-    train_examples = [train_examples[0]]
+    train_examples = [train_examples[0], train_examples[1]]
     valid_examples = [valid_examples[0]]
     test_examples = [test_examples[0]]
 
@@ -497,7 +490,7 @@ else:
 
 model.to(device)
 
-optimizer = AdamW(
+optimizer = tfr.AdamW(
     model.parameters(),
     lr=learning_rate0,
     # warmup=warmup_proportion,

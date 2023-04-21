@@ -21,7 +21,11 @@ from nltk.corpus import stopwords
 from sklearn.utils import shuffle
 
 from vgcn_bert.env_config import env_config
-from vgcn_bert.utils import clean_str, del_http_user_tokenize
+from vgcn_bert.utils import (
+    clean_str,
+    del_http_user_tokenize,
+    get_bert_tokenizer,
+)
 
 random.seed(env_config.GLOBAL_SEED)
 np.random.seed(env_config.GLOBAL_SEED)
@@ -40,6 +44,7 @@ Config:
 parser = argparse.ArgumentParser()
 parser.add_argument("--ds", type=str, default="cola")
 parser.add_argument("--sw", type=int, default=0)
+parser.add_argument("--validate_program", action="store_true")
 args = parser.parse_args()
 cfg_ds = args.ds
 cfg_del_stop_words = True if args.sw == 1 else False
@@ -225,14 +230,8 @@ new_doc_content_list = []
 # use bert_tokenizer for split the sentence
 if cfg_use_bert_tokenizer_at_clean:
     print("Use bert_tokenizer for seperate words to bert vocab")
-    from pytorch_pretrained_bert import (  # for Huggingface transformer 0.6.2)
-        BertTokenizer,
-    )
-
-    # from transformers import BertTokenizer
-
-    bert_tokenizer = BertTokenizer.from_pretrained(
-        bert_model_scale, do_lower_case=bert_lower_case
+    bert_tokenizer = get_bert_tokenizer(
+        env_config, bert_model_scale, bert_lower_case
     )
 
 for doc_content in doc_content_list:
