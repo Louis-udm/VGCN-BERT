@@ -20,6 +20,14 @@ If you make use of this code or the VGCN-BERT approach in your work, please cite
   	     year      = {2020},
 	   }
 
+## ***** New VGCN-BERT model updated in July, 2023 *****
+The newest version is in HuggingFace model hub: [vgcn-bert-distilbert-base-uncased](https://huggingface.co/zhibinlu/vgcn-bert-distilbert-base-uncased). The new version has the following improvements:
+- Greatly speeds up the calculation speed of embedding vocabulary graph convolutinal network (or Word Graph embedding). Taking CoLa as an example, the new model only increases the training time by 11% compared with the base model
+- Updated subgraph selection algorithm.
+- Currently using DistilBert as the base model, but it is easy to migrate to other models.
+- Provide two graph construction methods in vgcn_bert/modeling_graph.py (the same NPMI statistical method as the paper, and the predefined entity-relationship mapping method)
+
+
 ## Requirements
 - Python >= 3.7
 - NLTK 3.4
